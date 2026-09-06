@@ -10,7 +10,6 @@ export const profile = {
   resumeUrl: '/resume/Atharva-Khaire-Resume.pdf',
   social: {
     github: 'https://github.com/beastlyluck',
-    linkedin: 'https://linkedin.com/in/atharvakhaire',
     twitter: 'https://twitter.com/atharvakhaire',
     email: 'mailto:atharvakhaire64@gmail.com',
   },
