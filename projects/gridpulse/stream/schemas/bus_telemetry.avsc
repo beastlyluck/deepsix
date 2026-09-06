@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "BusTelemetry",
+  "namespace": "gridpulse.v1",
+  "doc": "One SCADA sample per bus. Topic: grid.bus.telemetry, keyed by bus_id, 1 Hz.",
+  "fields": [
+    {"name": "bus_id", "type": "int"},
+    {"name": "ts_ms", "type": "long", "logicalType": "timestamp-millis"},
+    {"name": "kind", "type": {"type": "enum", "name": "BusKind", "symbols": ["WIND", "SOLAR", "BATTERY", "SUBSTATION", "LOAD"]}},
+    {"name": "p_mw", "type": "double", "doc": "net injection, generation positive"},
+    {"name": "v_pu", "type": "double"},
+    {"name": "angle_rad", "type": "double"},
+    {"name": "soc_mwh", "type": ["null", "double"], "default": null},
+    {"name": "quality", "type": {"type": "enum", "name": "Quality", "symbols": ["GOOD", "STALE", "ESTIMATED"]}, "default": "GOOD"}
+  ]
+}

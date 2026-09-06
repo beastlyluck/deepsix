@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>TerraTwin — documentation</title>
+<link rel="stylesheet" href="docs.css"/>
+</head>
+<body>
+<nav>
+  <a href="#reward">Reward</a>
+  <a href="#sensors">Sensors</a>
+  <a href="#deploy">Containers</a>
+</nav>
+<article>
+  <h1>TerraTwin notes</h1>
+  <p>Closed-loop climate for a vertical farm. The learner is fitted Q-iteration on facility-wide features. The truth file is <code>config/facility.toml</code>.</p>
+
+  <h2 id="reward">Reward</h2>
+  <pre>r = w_y · yield(PPFD, T, EC)
+  − w_e · (kWh_light + kWh_mist) · tariff
+  − w_d · mean(I)
+  − w_ℓ · fraction of trays outside limits</pre>
+  <p>Yield saturates in PPFD and has Gaussian bands on temperature and EC. Disease is not something the policy “cures” on a 15-minute step — it is a tax on letting RH sit high next to an infected neighbour. Weights are in the toml so a grower can retune without a retrain of the feature code.</p>
+
+  <h2 id="sensors">Sensor schema</h2>
+  <p>One row per tray per 15 minutes: <code>tower, layer, slot, temp_c, rh, ec_ms, ppfd, infected</code>. Neighbours are face-adjacent on the same slot. The stack bias (floor warmer) is applied in the climate step, not as a stored column — if you persist it, the learner will treat it as a controllable.</p>
+  <p>FQI features are facility means, a 90th percentile on temp and RH, and mean infection. Per-tray actions are out of scope.</p>
+
+  <h2 id="deploy">Lightweight cluster</h2>
+  <pre>docker build -f deploy/Dockerfile -t terratwin-loop:local .
+kubectl apply -f deploy/k8s.yaml
+# or
+systemctl enable --now terratwin-loop   # deploy/controller.service
+</pre>
+  <p>One replica. The loop is the product. The cluster only restarts it. Weights come from <code>outputs/q_weights.npy</code> after <code>python main.py</code>.</p>
+  <p>Board: <a href="../site/index.html">site/index.html</a></p>
+</article>
+</body>
+</html>

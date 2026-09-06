@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ED flow — four VIC campuses</title>
+<style>
+  body{margin:0;background:#141c1a;color:#e6efe9;font:14px/1.4 Consolas,monospace}
+  header{padding:16px 20px;background:#0e2f2a;border-bottom:3px solid #3ecf9a}
+  h1{margin:0;font-size:20px}
+  nav{padding:8px 20px;display:flex;gap:8px}
+  nav button{background:#24302c;color:#e6efe9;border:1px solid #3a4a45;padding:6px 10px;cursor:pointer}
+  nav button.on{background:#3ecf9a;color:#0e2f2a}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px}
+  .campus{background:#24302c;padding:10px;border-left:4px solid #3ecf9a}
+  .campus.hot{border-color:#ff6b6b}
+  .campus b{font-size:26px;display:block}
+  .main{display:grid;grid-template-columns:1fr 340px;gap:12px;padding:0 16px 20px}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid #3a4a45;padding:6px;text-align:left}
+  .note{padding:8px 0;color:#9bb0a8}
+  .hidden{display:none}
+  .card{background:#1c2623;padding:12px;margin:0 16px 12px}
+  label{display:block;margin:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <div style="opacity:.7;font-size:11px;letter-spacing:.16em">SHIFT BOARD · NOT AHV LIVE · SEED 19</div>
+  <h1>Ambulance ramping and 4-hour risk — Alfred / RMH / Clayton / Austin</h1>
+  <p style="margin:8px 0 0;opacity:.8">Last synthetic day. Austin flu multiplier after day 7. docs/METHOD.md · Streamlit app.py is the live board.</p>
+</header>
+<nav>
+  <button class="on" data-tab="huddle">Huddle</button>
+  <button data-tab="flu">Flu attribution</button>
+  <button data-tab="defs">Definitions</button>
+</nav>
+<div id="huddle">
+  <div class="row" id="tiles"></div>
+  <div class="main">
+    <div class="card">
+      <label>Campus <select id="camp"></select></label>
+      <label>Show <select id="metric"><option value="occupancy">occupancy</option><option value="ramping">ramping</option><option value="wait">wait min</option><option value="arrivals">arrivals</option></select></label>
+      <svg id="g" viewBox="0 0 720 220" width="100%"></svg>
+      <p class="note">Dashed line is bay cap (occupancy view). When the series sits on it, new arrivals ramp.</p>
+    </div>
+    <div class="card">
+      <h3>Last-day risk</h3>
+      <table id="risk"></table>
+      <p class="note" id="flag"></p>
+    </div>
+  </div>
+</div>
+<div id="flu" class="hidden">
+  <div class="card">
+    <h3>Week 2 vs week 1</h3>
+    <p class="note">Austin is the only campus given a 1.45× arrival shock after day 7. If the other three jump too, the twin drifted.</p>
+    <table id="attr"></table>
+  </div>
+</div>
+<div id="defs" class="hidden">
+  <div class="card">
+    <table>
+      <tr><td>wait</td><td>median minutes, 15-min slots</td></tr>
+      <tr><td>ramping</td><td>ambulance queue when bays full</td></tr>
+      <tr><td>at-risk</td><td>wait ≥ 90 min (early 4-hour flag)</td></tr>
+      <tr><td>residual</td><td>midnight occ − first-week winter median</td></tr>
+    </table>
+    <p>Poisson GLM: arrivals ~ campus + 2-hour bin + weekend. LOS ~ lognormal. Residual is not a forecast.</p>
+    <p><code>python main.py</code> then <code>streamlit run app.py</code></p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+const campuses = (C.campuses || []).map(r => r.campus);
+const names = campuses.length ? campuses : ["Alfred","Royal Melbourne","Monash Clayton","Austin"];
+const tiles = document.getElementById("tiles");
+const sel = document.getElementById("camp");
+names.forEach((n,i) => {
+  const r = (C.campuses || [])[i] || {};
+  const hot = (r.peak_ramping || 0) > 20;
+  tiles.innerHTML += `<div class="campus ${hot?"hot":""}"><div>${n}</div><b>${r.median_wait ?? "—"} min</b>ramp ${r.peak_ramping ?? "—"} · occ ${r.occ_pct ?? "—"}% · ${r.bays ?? ""} bays</div>`;
+  const o = document.createElement("option"); o.value = n; o.textContent = n; sel.appendChild(o);
+});
+if (C.flu_flag) document.getElementById("flag").textContent = "Flu flag: Austin midnight residual > 4. Open Austin first.";
+document.getElementById("risk").innerHTML = "<tr><th>campus</th><th>breaches</th><th>peak ramp</th><th>residual</th></tr>" +
+  (C.campuses || []).map(r => `<tr><td>${r.campus}</td><td>${r.breaches}</td><td>${r.peak_ramping}</td><td>${r.midnight_residual}</td></tr>`).join("");
+document.getElementById("attr").innerHTML = "<tr><th>campus</th><th>arr w1</th><th>arr w2</th><th>wait w1</th><th>wait w2</th><th>ramp w2</th><th>breach w2</th></tr>" +
+  (C.attribution || []).map(r => `<tr><td>${r.campus}</td><td>${r.arrivals_w1}</td><td>${r.arrivals_w2}</td><td>${r.wait_w1}</td><td>${r.wait_w2}</td><td>${r.ramp_w2}</td><td>${r.breach_w2}</td></tr>`).join("");
+
+document.querySelectorAll("nav button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    ["huddle","flu","defs"].forEach(id => document.getElementById(id).classList.toggle("hidden", id !== b.dataset.tab));
+  };
+});
+
+function draw(){
+  const name = sel.value;
+  const metric = document.getElementById("metric").value;
+  const s = (C.series && C.series[name]) || null;
+  const ys = s ? s[metric] : Array.from({length:96}, (_,i) => 20+10*Math.sin(i/8));
+  const bays = s ? s.bays : 36;
+  const mx = Math.max(...ys, bays, 1);
+  const path = ys.map((y,i) => ((i?"L":"M")+(20+i*(680/Math.max(ys.length-1,1)))+","+(200-(y/mx)*170))).join(" ");
+  const cap = 200 - (bays/mx)*170;
+  document.getElementById("g").innerHTML = '<path d="'+path+'" fill="none" stroke="#3ecf9a" stroke-width="2"/>'
+    + (metric==="occupancy" ? '<line x1="20" x2="700" y1="'+cap+'" y2="'+cap+'" stroke="#ff6b6b" stroke-dasharray="4 3"/>' : "");
+}
+sel.onchange = draw;
+document.getElementById("metric").onchange = draw;
+draw();
+</script>
+</body>
+</html>

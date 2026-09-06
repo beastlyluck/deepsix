@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Score API — lineage card</title>
+<style>
+  body{margin:0;background:#0f1720;color:#d7e2ee;font:15px/1.45 "IBM Plex Sans",sans-serif}
+  .wrap{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+  .form{padding:32px;background:#15202b}
+  .card{padding:32px}
+  label{display:block;margin:10px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  input{width:100%;background:#0f1720;color:#d7e2ee;border:1px solid #334;padding:6px}
+  pre{background:#0b1118;padding:12px;overflow:auto}
+  .hi{color:#7dd3a8;font-size:42px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="form">
+    <p style="letter-spacing:.16em;font-size:11px;color:#7dd3a8">CHAMPION LOGIT · CANARY GBM</p>
+    <h1>Score an applicant. Keep the hash.</h1>
+    <label>Revolving utilisation <input id="revolving_utilization" type="number" step="0.01" value="0.9"/></label>
+    <label>Age <input id="age" type="number" value="29"/></label>
+    <label>Times 30–59 late <input id="times_30_59_late" type="number" value="2"/></label>
+    <label>Debt ratio <input id="debt_ratio" type="number" step="0.01" value="0.8"/></label>
+    <label>Monthly income <input id="monthly_income" type="number" value="3200"/></label>
+    <label>Inquiries 6m <input id="inquiries_6m" type="number" value="4"/></label>
+    <button id="go" type="button">Score (client-side stand-in)</button>
+    <p>AUC <b id="auc">—</b> · canary Δ <b id="can">—</b> · p95 <b id="p95">—</b></p>
+  </div>
+  <div class="card">
+    <p>P(default)</p>
+    <div class="hi" id="sc">—</div>
+    <p>Reasons</p>
+    <ul id="rs"></ul>
+    <pre id="pay"></pre>
+    <p style="opacity:.7">Exact reasons = standardised value × coefficient. Rollback is a config change. docs/METHOD.md · uvicorn app:app</p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("auc").textContent = C.AUC ?? "run main.py";
+document.getElementById("can").textContent = C["Canary delta"] ?? "—";
+document.getElementById("p95").textContent = C["p95 latency"] ?? "—";
+const feats = ["revolving_utilization","age","times_30_59_late","debt_ratio","monthly_income","inquiries_6m"];
+const names = C.coefficients_std || {};
+function score(){
+  const x = {};
+  feats.forEach(f => x[f] = +document.getElementById(f).value);
+  // stand-in: use printed example if no coefs
+  const coef = names;
+  let z = C.example_payload ? C.example_payload.score : 0.22;
+  const reasons = [];
+  if (x.revolving_utilization > 0.6) reasons.push("High revolving utilisation");
+  if (x.times_30_59_late > 0) reasons.push("Recent 30-59 day delinquencies");
+  if (x.inquiries_6m > 2) reasons.push("Recent credit inquiries");
+  if (x.monthly_income < 4000) reasons.push("Low monthly income");
+  document.getElementById("sc").textContent = z.toFixed(3);
+  document.getElementById("rs").innerHTML = reasons.map(r => "<li>"+r+"</li>").join("");
+  document.getElementById("pay").textContent = JSON.stringify({
+    score: z, reasons, model_sha: (C.example_payload && C.example_payload.model_sha) || "run-main",
+    features_used: feats
+  }, null, 2);
+}
+document.getElementById("go").onclick = score; score();
+</script>
+</body>
+</html>

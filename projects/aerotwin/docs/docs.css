@@ -1,0 +1,25 @@
+:root { --bg: #0b0e14; --panel: #11161f; --line: #1f2a3a; --ink: #d8e2f0; --muted: #7d8ba0; --neon: #35c8ff; }
+* { box-sizing: border-box; }
+body { margin: 0; display: grid; grid-template-columns: 220px 1fr; background: var(--bg); color: var(--ink); font: 14px/1.6 "Segoe UI", system-ui, sans-serif; }
+nav { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); padding: 20px 16px; display: flex; flex-direction: column; gap: 6px; }
+.brand { color: var(--neon); letter-spacing: .18em; font-size: 12px; margin-bottom: 14px; }
+.brand small { color: var(--muted); letter-spacing: 0; }
+nav a { color: var(--ink); text-decoration: none; font-size: 13px; padding: 3px 0; }
+nav a:hover { color: var(--neon); }
+nav a.ext { margin-top: auto; color: var(--neon); }
+main { max-width: 900px; padding: 30px 40px 80px; }
+section { margin-bottom: 44px; }
+h1 { font-size: 30px; margin: 0 0 8px; }
+h2 { font-size: 19px; margin: 0 0 12px; color: var(--neon); }
+h3 { font-size: 14px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.lead { font-size: 16px; color: #b9c6d9; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 10px 0; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.facts th { width: 180px; }
+pre { background: var(--panel); border: 1px solid var(--line); padding: 12px; overflow: auto; font: 12px/1.5 Consolas, monospace; }
+.diagram { color: #9fe8ff; }
+.math { background: var(--panel); border-left: 3px solid var(--neon); padding: 8px 14px; margin: 10px 0; }
+.note { color: var(--muted); font-size: 13px; border-left: 2px solid var(--line); padding-left: 10px; }
+code { color: #6ef0ff; }
+ul { padding-left: 20px; }

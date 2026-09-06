@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Supplier risk — one cut, three hospitals</title>
+<style>
+  body{margin:0;background:#f3efe6;color:#2a2114;font:15px/1.4 Georgia,serif}
+  header{padding:24px 28px;background:#3a2a14;color:#f3efe6}
+  .wrap{display:grid;grid-template-columns:1fr 320px;gap:16px;padding:16px 28px 40px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{border-bottom:1px solid #d4c8b0;padding:5px;text-align:left}
+  tr.on{background:#f0d9a8}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.14em;font-size:11px">VENDORS → PORTS → DCs → HOSPITALS</div>
+  <h1>The delayed container that starves three wards</h1>
+  <p>Betweenness × delay probability × volume × hospitals lost if the edge is cut. Recall is on high-impact delay events, not on pretty graphs.</p>
+</header>
+<div class="wrap">
+  <div>
+    <p>Nodes <b id="n">—</b> · critical edges <b id="k">—</b> · delay recall <b id="r">—</b></p>
+    <p id="cut"></p>
+    <table id="t"></table>
+  </div>
+  <div>
+    <h3>How to read</h3>
+    <p>Red edges on the figure are the top-K. Click a row: that is the brief. If recall is low, the score is ranking the wrong choke points.</p>
+    <p>docs/METHOD.md · Brandes fallback if networkx is missing.</p>
+    <pre>python main.py</pre>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("n").textContent = C.Nodes ?? "run main.py";
+document.getElementById("k").textContent = C["Critical edges"] ?? "—";
+document.getElementById("r").textContent = C["Delay recall"] ?? "—";
+const top = C.top_edge || {};
+document.getElementById("cut").textContent = top.edge
+  ? `Cut ${top.edge[0]} → ${top.edge[1]} and ${top.hospitals_starved_if_cut} hospitals lose every inbound path.`
+  : "";
+document.getElementById("t").innerHTML = "<tr><th>edge</th><th>score</th><th>starves</th></tr>" +
+  (C.critical_edges || []).map((e,i) => `<tr class="${i===0?"on":""}"><td>${e.edge[0]}→${e.edge[1]}</td><td>${e.score}</td><td>${e.starves}</td></tr>`).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package aerotwin.v1;
+
+// Ground station <-> swarm. Telemetry streams up, corrections stream down.
+service Swarm {
+  rpc StreamTelemetry(stream Telemetry) returns (stream Correction);
+  rpc SetFormation(FormationRequest) returns (Ack);
+  rpc Query(ManualQuery) returns (ManualAnswer);
+  rpc Health(Empty) returns (HealthReport);
+}
+
+message Telemetry {
+  string drone_id = 1;
+  uint64 t_us = 2;
+  float px = 3; float py = 4; float pz = 5;
+  float vx = 6; float vy = 7; float vz = 8;
+  float roll = 9; float pitch = 10; float yaw = 11;
+  float wind_est = 12;
+  float link_rssi_dbm = 13;
+}
+
+message Correction {
+  string drone_id = 1;
+  uint64 t_us = 2;
+  float ax = 3; float ay = 4; float az = 5;
+  string reason = 6;        // "gust", "formation", "spacing", "nominal"
+  string policy_sha = 7;
+}
+
+message FormationRequest {
+  string pattern = 1;       // "lissajous", "line", "ring"
+  float radius_m = 2;
+  float altitude_m = 3;
+  float spacing_min_m = 4;
+}
+
+message ManualQuery { string text = 1; uint32 top_k = 2; }
+message ManualAnswer {
+  repeated Passage passages = 1;
+}
+message Passage { string doc = 1; string family = 2; string loc = 3; float score = 4; string text = 5; }
+
+message Ack { bool ok = 1; string detail = 2; }
+message Empty {}
+message HealthReport {
+  string policy_sha = 1;
+  uint32 loop_hz = 2;
+  uint32 missed_deadlines = 3;
+  float s2r_gap_m = 4;
+}

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>GridPulse — documentation</title>
+<link rel="stylesheet" href="docs.css"/></head>
+<body>
+<nav>
+  <div class="brand">GRIDPULSE<br><small>docs v1</small></div>
+  <a href="#overview">Overview</a>
+  <a href="#topology">Pipeline topology</a>
+  <a href="#powerflow">Power flow & cascades</a>
+  <a href="#pinn">PINN: conductor thermal PDE</a>
+  <a href="#loss">Loss function & boundaries</a>
+  <a href="#gnn">Graph model</a>
+  <a href="#dispatch">Dispatch LP</a>
+  <a href="#stream">Streaming & feature store</a>
+  <a href="#schemas">Kafka schemas</a>
+  <a href="#drift">Drift & limits</a>
+  <a href="../site/index.html" class="ext">→ live dashboard</a>
+</nav>
+<main>
+<section id="overview">
+  <h1>GridPulse</h1>
+  <p class="lead">A digital twin for a 48-bus regional microgrid: wind on the ridge, solar on the plain, three battery sites, thirty load centres and a grid tie. The twin answers one operational question each morning — <em>which lines can we actually run at their nameplate today, and what does the N-2 we fear most do to the evening peak under that schedule?</em></p>
+  <table class="facts">
+    <tr><th>Physical asset</th><td>Decentralised regional microgrid, 48 buses, 112 lines, 1 Hz SCADA</td></tr>
+    <tr><th>Final product</th><td>Automated load-balancing engine: PINN dynamic line ratings → HiGHS LP dispatch → SGC cascade-risk scorer on a Kafka/Flink feature stream</td></tr>
+    <tr><th>Technical bottleneck</th><td>Physics-informed thermal limits on conductors; graph-structured prediction of cascading failure</td></tr>
+    <tr><th>Stack</th><td>PyTorch (PINN only) · scipy.sparse DC power flow · scipy HiGHS LP · scikit-learn readout · Kafka Avro + Flink SQL · DuckDB (sqlite fallback) · plain SVG</td></tr>
+  </table>
+</section>
+
+<section id="topology">
+  <h2>Pipeline topology</h2>
+<pre class="diagram">
+ grid/topology.py ──► grid/powerflow.py ──► grid/scenarios.py ──► gnn/sgc.py ──► models[K]
+   (48 buses)          (DC PF, PTDF,          (N-1 / N-2 draws)     (hops, logit)     │
+                        cascade)                                                       │
+ pinn/thermal.py ──► sustainable current I* ──► dispatch/lp.py (HiGHS) ──► schedule    │
+   (T(x,t,I) PINN)       (bisection)             static vs derated           │         │
+                                                                             ▼         ▼
+ Kafka grid.bus.telemetry ─► Flink features.sql ─► bus_features ─► stream/replay.py ─► grid.alert.cascade
+ Kafka grid.line.flow    ─┘                       (DuckDB/sqlite)         │
+                                                                          ▼
+                                                            outputs/dashboard.json ─► site/
+</pre>
+</section>
+
+<section id="powerflow">
+  <h2>Power flow and the cascade model</h2>
+  <p>DC approximation: \( P = B\theta \), \( f = \mathrm{diag}(1/x)\,A\,\theta \), where \( A \) is the line–bus incidence matrix and \( x \) per-unit reactance. The system is solved per connected island with one reference bus each so a tripped tie can never produce a singular matrix. Islands without the grid tie are balanced pro rata before solving.</p>
+  <p>Cascade: lines trip when \( |f_\ell| > 1.12\, \bar f_\ell \) (emergency rating above the continuous one). The grid is re-islanded and re-solved until nothing else trips or twelve rounds pass. A load bus is <em>lost</em> if it ends up in an island whose generation covers less than 70 percent of its demand.</p>
+  <p>Ratings are set from the conductor, not from the base case: \( \bar f_\ell = \max(1.35\,|f^{\text{base}}_\ell|,\ 6\ \text{MW}) \). Six lines on busy corridors are deliberately tight at 1.08× base flow — the weak links that give a cascade somewhere to start.</p>
+  <p>PTDF: \( \partial f / \partial P \) is computed column by column from unit injections against the slack; the dispatch LP uses it to make line flows linear in the decision variables.</p>
+</section>
+
+<section id="pinn">
+  <h2>PINN: conductor temperature along a span</h2>
+  <p>A transmission line's continuous rating assumes uniform convective cooling. Real spans have a sheltered section — a cutting, a tree line — where wind cooling drops and a hotspot forms well before the conductor as a whole is at its limit. The PINN learns \( T(x,t,I) \) for the whole loading range at once, so the dispatcher can ask "how long can I run this line at 92 percent?" without a solver in the loop.</p>
+  <div class="math">
+    <p>Non-dimensional governing equation on \( x\in[0,1] \), \( t\in[0,1] \) (one hour), \( I \) in per-unit of the static rating:</p>
+    \[ \frac{\partial T}{\partial t} = a\,\frac{\partial^2 T}{\partial x^2} + Q\,I^2 - b(x)\,\bigl(T - T_{\text{amb}}\bigr), \qquad b(x) = 5 - 3.2\,e^{-((x-0.55)/0.12)^2} \]
+    <p>with \( a = 0.02 \), \( Q = 256 \), \( T_{\text{amb}} = 25\ ^\circ\text{C} \), limit \( T_{\text{lim}} = 90\ ^\circ\text{C} \).</p>
+  </div>
+  <p>Boundary conditions \( T(0,t) = T(1,t) = T_{\text{amb}} \) (towers act as heat sinks) and initial condition \( T(x,0) = T_{\text{amb}} \) are enforced exactly by construction rather than penalised.</p>
+</section>
+
+<section id="loss">
+  <h2>Loss function and boundary constraints</h2>
+  <div class="math">
+    <p>Ansatz in the scaled variable \( \theta = (T - T_{\text{amb}})/60 \):</p>
+    \[ \theta_\phi(x,t,I) = 4\,x(1-x)\,\bigl(1 - e^{-5t}\bigr)\; f_\phi(x,t,I) \]
+    <p>\( x(1-x) \) vanishes on both boundaries; \( 1 - e^{-5t} \) vanishes at \( t=0 \) and hands the network a first-order rise for free. \( f_\phi \) is a 3×64 tanh MLP.</p>
+    <p>Residual, \( O(1) \) by construction:</p>
+    \[ r_\phi = \partial_t \theta_\phi - a\,\partial_{xx}\theta_\phi - \tfrac{Q}{60} I^2 + b(x)\,\theta_\phi \]
+    \[ \mathcal{L}(\phi) = \frac{1}{N}\sum_{n=1}^{N} r_\phi(x_n, t_n, I_n)^2, \qquad (x_n,t_n,I_n) \sim \text{collocation} \]
+    <p>Collocation: \( t \sim U(0,1) \), \( I \sim U(0.4,1.4) \), and \( x \) is two-thirds uniform, one-third \( \mathcal{N}(0.55, 0.15) \) so the sheltered span where the second derivative is largest is over-sampled. Second derivatives come from two passes of <code>torch.autograd.grad</code> with <code>create_graph=True</code>. Adam, cosine schedule, 3000 steps of 1536 points; there is no data term.</p>
+  </div>
+  <h3>Verification, not self-report</h3>
+  <p>The PINN is judged against an explicit finite-difference solution (101 points, 4000 steps, \( a\,\Delta t/\Delta x^2 = 0.08 &lt; 0.5 \)) at three loadings. Reported: relative \( L_2 \) of \( T - T_{\text{amb}} \) at \( t=1 \) and the hotspot temperature error. The residual alone is not evidence; a network can have small residual and wrong boundary behaviour.</p>
+  <h3>Boundary statement for the rating</h3>
+  <p>Sustainable current \( I^\star = \sup\{ I : \max_x T(x,1,I) &lt; T_{\text{lim}} \} \), found by bisection on the trained network. With the parameters above \( I^\star \approx 0.86 \): a line that the static rating calls fine at 90 percent will cross 90 °C in the sheltered span within about 40 minutes. The dispatch LP caps any line the static schedule would run above \( I^\star \) at \( I^\star\,\bar f_\ell \) for that hour.</p>
+</section>
+
+<section id="gnn">
+  <h2>Graph model: cascade risk per bus</h2>
+  <p>Message passing without learned propagation weights. With \( \tilde A = A + I \), \( \tilde D = \mathrm{diag}(\tilde A \mathbf 1) \), the propagator is \( S = \tilde D^{-1/2}\tilde A\,\tilde D^{-1/2} \). Node features \( X \) (net injection, |injection|, live degree, sum and max of incident-line loading, adjacency to the tripped line, count of hot lines) are propagated and hop-concatenated:</p>
+  <div class="math">\[ H_K = \bigl[\,X \;\|\; SX \;\|\; S^2X \;\|\; \dots \;\|\; S^KX\,\bigr], \qquad \hat p = \sigma\bigl(W H_K + c\bigr) \]</div>
+  <p>Hop concatenation rather than pure \( S^K X \): a bus's own loading matters as much as its neighbourhood's, and plain smoothing dilutes the local features. The readout is a standardised logistic regression with balanced class weights. \( K = 0 \) is the exact ablation — same features, no graph. Labels come from the cascade simulator on 400 sampled contingencies (70 percent N-1, 30 percent N-2, demand scaled 0.9–1.35); the split is by scenario so no outage appears in both train and test.</p>
+  <p>Edge criticality, used for edge width on the dashboard, is the fraction of cascades in which a line tripped without being the initiating contingency.</p>
+</section>
+
+<section id="dispatch">
+  <h2>Day-ahead dispatch LP</h2>
+  <p>One linear program over 24 hours, solved with HiGHS through <code>scipy.optimize.linprog</code>. Per hour: renewable dispatch \( g \le \text{avail} \), battery charge/discharge \( \le 10 \) MW, state of charge \( \le 40 \) MWh, load shed per bus, grid-tie import and export.</p>
+  <div class="math">
+    \[ \min \sum_h \Bigl( 80\,\text{imp}_h - 20\,\text{exp}_h - 50\,\textstyle\sum g_h + 5\,\textstyle\sum(\text{ch}_h + \text{dis}_h) + 1000\,\textstyle\sum \text{shed}_h \Bigr) \]
+    \[ \text{s.t.}\quad \textstyle\sum g_h + \sum \text{dis}_h - \sum \text{ch}_h + \sum \text{shed}_h + \text{imp}_h - \text{exp}_h = D_h \]
+    \[ \text{soc}_{h} = \text{soc}_{h-1} + \eta\,\text{ch}_h - \text{dis}_h/\eta, \qquad \bigl|\,\Phi\, p_h\,\bigr| \le \bar f_h \]
+  </div>
+  <p>\( \Phi \) is the PTDF matrix and \( p_h \) the vector of bus injections implied by the decision variables; \( \bar f_h \) is per line per hour and is where the PINN's derating enters. The engine solves the LP twice — static ratings, then derated — and reports the cost of the safer schedule. In the shipped run that is roughly \$10k for a day on which the worst N-2 goes from 30 buses lost to none.</p>
+</section>
+
+<section id="stream">
+  <h2>Streaming layer and feature store</h2>
+  <p><code>stream/features.sql</code> is the Flink job: 60-second tumbling windows per bus, joined to the per-line flow stream through the incident-line view, producing the exact seven features the graph model was trained on. <code>stream/feature_store.py</code> is the sink — DuckDB when available, sqlite otherwise, same DDL. <code>stream/replay.py</code> is the same loop run offline over a dispatched day at ten-minute resolution so the dashboard has something to scrub through; the N-2 contingency is injected at 18:00.</p>
+  <p>Alerts are emitted on the rising edge only: a bus enters the alert stream when its risk crosses 0.5 and is not re-emitted every window while it stays there.</p>
+</section>
+
+<section id="schemas">
+  <h2>Kafka schemas</h2>
+  <table>
+    <tr><th>Topic</th><th>Schema</th><th>Key</th><th>Rate</th><th>Notes</th></tr>
+    <tr><td>grid.bus.telemetry</td><td>BusTelemetry</td><td>bus_id</td><td>1 Hz</td><td>net injection, voltage, angle, SoC where present, quality flag</td></tr>
+    <tr><td>grid.line.flow</td><td>LineFlow</td><td>line_id</td><td>1 Hz</td><td>flow, static limit, PINN dynamic limit, hotspot estimate, status</td></tr>
+    <tr><td>grid.alert.cascade</td><td>CascadeAlert</td><td>alert_id</td><td>event</td><td>risk, severity, contributing open lines, model sha, window end</td></tr>
+  </table>
+  <p>Avro records live in <code>stream/schemas/</code>. Quality flags on telemetry propagate as <code>all_good</code> in the feature row so a scorer can refuse to alert on estimated data.</p>
+</section>
+
+<section id="drift">
+  <h2>Drift handling and limits</h2>
+  <ul>
+    <li><b>Thermal drift.</b> Ambient temperature and wind change the cooling profile \( b(x) \) hourly. The PINN takes fixed coefficients; production would retrain daily on the forecast or condition on \( T_{\text{amb}} \) and wind as extra inputs. Retrain trigger: FD verification error above 3 percent.</li>
+    <li><b>Topology drift.</b> Switching changes \( A \). The SGC propagator is recomputed from the live line status; the readout weights are not topology-specific, so no retrain is needed for a reconfiguration. Adding a bus does need one.</li>
+    <li><b>Label drift.</b> Cascade labels come from the simulator, not from history. Real outages are rare and the model will be miscalibrated on them; the AUC here is against the simulator's notion of loss.</li>
+    <li><b>Not modelled.</b> Reactive power and voltage collapse, protection timing, generator ramp limits, frequency response of islands. Each of these can make a real cascade worse or better than the DC model says.</li>
+  </ul>
+</section>
+</main>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']]}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body></html>

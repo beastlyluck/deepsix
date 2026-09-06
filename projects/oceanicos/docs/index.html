@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>OceanicOS — technical documentation</title>
+<link rel="stylesheet" href="docs.css"/>
+</head>
+<body>
+<nav>
+  <div class="brand">OCEANICOS<small>terminal digital twin · docs</small></div>
+  <a href="#overview">1. What this is</a>
+  <a href="#pipeline">2. Pipeline topology</a>
+  <a href="#layout">3. Terminal graph</a>
+  <a href="#des">4. Discrete-event model</a>
+  <a href="#assign">5. Assignment engine</a>
+  <a href="#stgnn">6. Spatio-temporal traffic model</a>
+  <a href="#hier">7. Hierarchical forecast &amp; MinT</a>
+  <a href="#dwell">8. Dwell shrinkage</a>
+  <a href="#ingest">9. Ingestion &amp; event store</a>
+  <a href="#api">10. API</a>
+  <a href="#bench">11. Benchmark method</a>
+  <a href="#drift">12. Drift &amp; what breaks</a>
+  <a class="ext" href="../site/index.html">→ operations dashboard</a>
+</nav>
+<main>
+
+<section id="overview">
+  <h1>OceanicOS</h1>
+  <p class="lead">A digital twin of an automated container terminal: six ship-to-shore cranes on two berths, 32 yard blocks, 16 AGVs, a gate. The twin runs the terminal forward as a discrete-event simulation, and the product is the dispatcher that sits inside it: an assignment matrix that pairs AGVs to boxes and boxes to blocks using a spatio-temporal traffic forecast and a per-line dwell model.</p>
+  <table class="facts">
+    <tr><th>Physical asset</th><td>Container terminal: 2 berths × 3 STS cranes, 4×8 yard blocks (320 TEU each), 16 AGVs, single truck gate</td></tr>
+    <tr><th>Final product</th><td><code>terminal.policy.Matrix</code>: Hungarian pairing + block scoring; <code>api.server</code>: REST plan endpoints and WebSocket replay</td></tr>
+    <tr><th>Bottlenecks addressed</th><td>Spatio-temporal graph model for AGV lane density; hierarchical volume forecast that must add up across terminal → line → service</td></tr>
+    <tr><th>Stack</th><td>Python stdlib heap DES, NetworkX road graph, SciPy Hungarian, LightGBM/sklearn readout, NumPy Holt-Winters + MinT, DuckDB/SQLite event store, FastAPI + WebSocket, canvas dashboard</td></tr>
+    <tr><th>Runtime</th><td>48 h simulated under two policies, model fits and forecasts: ~1 min on a laptop CPU</td></tr>
+  </table>
+  <div class="callout">Everything is synthetic. The vessel schedule, dwell distributions and layout are invented; the claims are about the method under controlled comparison, not about a real port.</div>
+</section>
+
+<section id="pipeline">
+  <h2>2. Pipeline topology</h2>
+<pre class="diagram">
+vessel schedule (48 h, 6 lines)          Layout: quay, blocks, lanes, gate  ──▶  NetworkX road graph
+        │                                        │  all-pairs Dijkstra (paths + travel s)
+        ▼                                        ▼
+Terminal DES ── policy = Greedy ────────▶ snapshots every 300 s ─▶ node_series: occ, inbound, queue, density
+        │                                                                  │
+        │                                       route_adjacency W ─▶ P = D⁻¹W ─▶ [X, PX, P²X] × 6 lags ─▶ GBM ─▶ Congestion()
+        │                                                                                                    │
+        ├── policy = Matrix(congestion_fn=Congestion, dwell_fn=shrunk dwell) ◀──────────────────────────────┘
+        │
+        ▼
+both runs ─▶ Store (DuckDB | SQLite): events, snapshots ─▶ FastAPI /v1/…  +  ws /v1/stream/{run}
+        │
+        ├─▶ KPIs: moves/h, crane stall, empty share, yard peak, turnaround
+        └─▶ dashboard.json ─▶ site/data.js ─▶ canvas replay
+
+weekly_history (3 y, line×service) ─▶ Holt-Winters per node ─▶ MinT-shrink reconcile ─▶ MAPE by level, incoherence
+</pre>
+</section>
+
+<section id="layout">
+  <h2>3. Terminal graph</h2>
+  <p>The yard is a 4×8 grid of 120×60 m blocks with 30 m AGV lanes between them; the quay runs along <code>y=0</code> with cranes at 170 m pitch. Lane intersections are graph nodes, lanes are edges weighted by metres. Each crane, block and the gate hangs off its nearest intersection. Travel time is path length at 5 m/s plus 12 s turn-in/out.</p>
+  <h3>Route-overlap adjacency</h3>
+  <p>The first adjacency tried was distance-kernel <code>exp(-d/120)</code>. It made the graph features <em>worse</em> than no graph at every horizon: a block's neighbours in Euclidean distance are not the blocks whose traffic drives past it. The adjacency the model uses is built from the actual routes:</p>
+  <div class="math">
+    W[i, j] = (1/Q) · #{ cranes c : shortest path c → block_j passes within 100 m of block_i }<br/>
+    W[i, Q+c] = (1/n_blocks) · #{ blocks j : route c → j passes block_i }
+  </div>
+  <p>so <code>P·inbound</code> at block i is literally the number of loaded AGVs about to drive past it. Blocks are nodes 0..31, cranes 32..37.</p>
+</section>
+
+<section id="des">
+  <h2>4. Discrete-event model</h2>
+  <p><code>terminal/des.py</code> is a heap of <code>(time, seq, event)</code> in seconds. SimPy would be shorter; the heap is there so the sim runs with nothing but the standard library and numpy on the terminal's air-gapped box.</p>
+  <table>
+    <tr><th>Process</th><th>Rule</th></tr>
+    <tr><td>vessel</td><td>Arrives at ETA. Two berths, three cranes each. Both taken → anchor queue; 30 min berth shift when one frees.</td></tr>
+    <tr><td>crane</td><td>Lands a box on the hook 110 s after the previous one was taken. Cannot start the next cycle until an AGV takes this one: <b>a missing AGV stalls the crane</b>, and stall seconds are the primary KPI.</td></tr>
+    <tr><td>AGV</td><td>Assigned to (box, block). Drives empty to the crane, waits for the hook if early, loads, drives to the block (+25 s unload), frees, triggers dispatch.</td></tr>
+    <tr><td>block</td><td>Stacks until 320. Each box leaves via the gate after its dwell, drawn log-normal from the line's dwell profile.</td></tr>
+    <tr><td>policy</td><td><code>dispatch(T)</code> is called on every new-box and free-AGV event. It sees free AGVs, the crane queues, occupancy and in-flight boxes.</td></tr>
+  </table>
+  <h3>A bug worth recording</h3>
+  <p>The first version scheduled the next crane cycle <code>CYCLE_S</code> after the AGV pickup <em>and</em> stamped the next box ready at <code>born + CYCLE_S</code>: the crane cycle was effectively doubled, throughput was ~85 moves/h and both policies looked identical because nothing downstream of the hook mattered. Fixing it was what made the policy comparison meaningful.</p>
+</section>
+
+<section id="assign">
+  <h2>5. Assignment engine</h2>
+  <h3>Baseline: greedy</h3>
+  <p>First waiting box, nearest free AGV, nearest block with room. It is what most terminals run, and it is hard to beat on crane stall because it never spends travel on anything else.</p>
+  <h3>Matrix</h3>
+  <p>Every dispatch call solves one rectangular assignment over all free AGVs and all waiting boxes with <code>scipy.optimize.linear_sum_assignment</code>:</p>
+  <div class="math">
+    cost[a, b] = max(travel(a → crane_b) − ready_in_b, 0) + 0.1 · travel(a → crane_b)
+  </div>
+  <p>Lateness against the hook is what stalls a crane, so lateness is the cost; the small travel term breaks ties toward short empty runs. The block leg is deliberately <em>not</em> in the pairing cost: it belongs to the box, not to which AGV carries it. Including it was the first version's mistake and cost 30+ minutes of stall per crane.</p>
+  <h3>Block choice</h3>
+  <div class="math">
+    cost[k] = leg_k + slack · ( 60·|depth_k − want_deep| + 25·congest_k ) + 250·fill_k³<br/>
+    want_deep = clip(dwell_days / 6, 0, 1) &nbsp;&nbsp; slack = clip((free_AGVs − waiting_boxes) / (0.3·fleet), 0, 1)
+  </div>
+  <p><code>depth</code> is normalised gate distance, <code>congest</code> is the model's predicted AGV density around the block over the next 15 min, <code>fill</code> includes in-flight boxes. <code>slack</code> is the key control: when AGVs are to spare the policy spends travel on yard shape (long stayers deep, short stayers gate-side, avoid predicted traffic); when cranes are starving, the shortest leg wins and only saturation still matters.</p>
+</section>
+
+<section id="stgnn">
+  <h2>6. Spatio-temporal traffic model</h2>
+  <p>DCRNN-style diffusion convolution with a gradient-boosting readout instead of a recurrent cell. <code>P = D⁻¹W</code> on the route graph; per-node features <code>X = [occ/320, inbound, crane queue, density, sin(hour)]</code>; hops <code>[X, PX, P²X]</code> concatenated over 6 lags of 5-minute snapshots. Readout is LightGBM if installed, sklearn HistGradientBoosting otherwise. No learned message-passing weights, so the model refits between shifts in seconds.</p>
+  <h3>Target</h3>
+  <p>Busy AGVs within 150 m of each block, averaged over the next 15 / 30 / 60 minutes. Arrivals-per-block was tried first and the graph could not help with it: arrivals are decided by the policy, not by neighbours. Lane density is physically propagated along routes, which is what the diffusion operator encodes.</p>
+  <h3>Result (48 h, greedy run, 70/30 time split)</h3>
+  <p>K=2 beats K=0 by ~10% at 15 min, the horizon the dispatcher uses; at 30 and 60 min the crane schedule dominates and K=0 is better. Both beat persistence by more than 2×. The live scorer uses K=2 at 15 min only, and the docs report all three so the crossover is visible.</p>
+</section>
+
+<section id="hier">
+  <h2>7. Hierarchical forecast &amp; MinT reconciliation</h2>
+  <p>Weekly TEU for three years across terminal → 6 lines → 14 services. Base forecasts are Holt-Winters (multiplicative seasonality, period 52) fitted at every node independently; the point is that they do not add up. On the 8-week holdout the base total and the sum of base services disagree by roughly 180 boxes/week.</p>
+  <div class="math">
+    ỹ = S · G · ŷ, &nbsp; G = (Sᵀ W⁻¹ S)⁻¹ Sᵀ W⁻¹, &nbsp; W = λ·diag(Σ̂) + (1−λ)·Σ̂, λ = 0.5
+  </div>
+  <p>where S is the summing matrix (21 × 14) and Σ̂ is the covariance of in-sample residuals after the first season. MinT-shrink keeps the total roughly as accurate and improves line and service MAPE by a few tenths of a point, while making the numbers coherent, which is what the yard plan needs: the block plan is built from the bottom and the labour plan from the top.</p>
+</section>
+
+<section id="dwell">
+  <h2>8. Dwell shrinkage</h2>
+  <p>Dwell per line is log-normal with σ = 0.45. A line with 40 sampled boxes in a 48 h window gets a noisy mean, so the estimate is shrunk toward the terminal prior:</p>
+  <div class="math">
+    μ_post = ( μ₀/τ² + Σ log xᵢ / σ² ) / ( 1/τ² + n/σ² ), &nbsp; τ = 0.3<br/>
+    P(dwell &gt; 5 d) = 1 − Φ((ln 5 − μ_post)/σ)
+  </div>
+  <p>The policy uses <code>exp(μ_post)</code> as the box's expected dwell for depth targeting; the API's yard-plan endpoint uses <code>P(&gt;5 d) &gt; 0.3</code> to route a booking deep or gate-side.</p>
+</section>
+
+<section id="ingest">
+  <h2>9. Ingestion &amp; event store</h2>
+  <p>Multi-scale: seconds (lift, stall, berth events), 5 minutes (state snapshots with every AGV's position, block occupancy, crane queues), weeks (volume history). All three land in one store, <code>api/store.py</code>, DuckDB when installed and SQLite otherwise, with the same two tables:</p>
+<pre>
+events(run TEXT, t INTEGER, kind TEXT, payload JSON)
+snapshots(run TEXT, t INTEGER, payload JSON)
+</pre>
+  <p>In production the lift and stall events are the TOS's crane PLC messages; snapshots come from the AGV fleet manager's position feed. The Flink-style replay in the dashboard is the WebSocket endpoint reading these tables in time order.</p>
+</section>
+
+<section id="api">
+  <h2>10. API</h2>
+  <pre>uvicorn api.server:app --port 8082</pre>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Returns</th></tr>
+    <tr><td>GET</td><td><code>/v1/kpis/{run}</code></td><td>KPIs for <code>greedy</code> or <code>matrix</code></td></tr>
+    <tr><td>GET</td><td><code>/v1/forecast/volume</code></td><td>Hierarchy MAPE by level and base incoherence</td></tr>
+    <tr><td>GET</td><td><code>/v1/forecast/dwell/{line}</code></td><td>Shrunk dwell mean and P(&gt;5 d)</td></tr>
+    <tr><td>POST</td><td><code>/v1/plan/yard</code></td><td><code>{line, service, boxes}</code> → zone recommendation</td></tr>
+    <tr><td>GET</td><td><code>/v1/events/{run}?t0&amp;t1</code></td><td>Events in a sim-time window</td></tr>
+    <tr><td>WS</td><td><code>/v1/stream/{run}?speed=60</code></td><td>Snapshots plus the events between them, at <code>speed</code> sim-s per wall-s</td></tr>
+  </table>
+</section>
+
+<section id="bench">
+  <h2>11. Benchmark method</h2>
+  <p>Same layout, same 48 h vessel schedule (deep copy), same fleet, same DES seed. Only the policy changes. The greedy run is also the training data for the traffic model, so the Matrix run is genuinely out-of-sample for the model.</p>
+  <table>
+    <tr><th>KPI</th><th>Definition</th></tr>
+    <tr><td>moves/h</td><td>Boxes landed in a block per simulated hour</td></tr>
+    <tr><td>crane stall</td><td>Minutes per crane the hook waited with a box for an AGV</td></tr>
+    <tr><td>AGV empty share</td><td>Empty metres / (empty + loaded metres)</td></tr>
+    <tr><td>yard peak saturation</td><td>Max block occupancy / 320 over all snapshots</td></tr>
+    <tr><td>turnaround</td><td>Vessel arrival to last crane finished, hours</td></tr>
+  </table>
+  <p>Honest reading of the result: Matrix matches greedy on throughput and turnaround, cuts empty travel by ~5 points and holds peak block saturation around 60% where greedy fills blocks to 100%. It pays with a couple of minutes more crane stall per crane over 48 h, which is the travel it spends on yard shape. The saturation number is the one that matters operationally: a full block means reshuffles, and reshuffles are not in this model.</p>
+</section>
+
+<section id="drift">
+  <h2>12. Drift &amp; what breaks</h2>
+  <ul>
+    <li><b>Schedule drift.</b> The traffic model is fitted on one 48 h greedy run. A different vessel mix shifts the density distribution; the fix is what <code>Congestion.fit</code> already is, a between-shift refit from the last day of snapshots.</li>
+    <li><b>Policy feedback.</b> The model is trained on greedy traffic and used inside Matrix, which changes traffic. Expect the 15 min MAE to degrade in the loop; monitor it from the Matrix run's own snapshots and refit on those once enough exist.</li>
+    <li><b>Layout changes.</b> Any block closure changes <code>route_adjacency</code>. Rebuild P; the readout can stay.</li>
+    <li><b>Reshuffles.</b> Not modelled. Saturation above ~85% in reality triggers rehandles that cost crane time; the model treats it as a soft penalty only.</li>
+    <li><b>Seasonality break.</b> Holt-Winters with a 52-week period assumes the pattern repeats. A new service or a lost contract shows up as a persistent residual on one bottom series; MinT will spread that error to its siblings, so watch per-series residuals, not the reconciled total.</li>
+  </ul>
+</section>
+
+</main>
+</body>
+</html>

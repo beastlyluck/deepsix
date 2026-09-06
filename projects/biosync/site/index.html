@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BioSync — patient replica</title>
+<link rel="stylesheet" href="theme.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker">BIOSYNC · CONTINUOUS REPLICA · PSEUDONYM <span id="pid">—</span></div>
+    <h1>One patient, one continuous model, every gap the wearable leaves</h1>
+  </div>
+  <div class="kpis">
+    <div><b id="k-node">—</b><span>ODE 60-min glucose RMSE</span></div>
+    <div><b id="k-esn">—</b><span>recurrent baseline, same windows</span></div>
+    <div><b id="k-drop">—</b><span>ODE at 60% device dropout</span></div>
+    <div><b id="k-lat">—</b><span>edge step latency</span></div>
+    <div><b id="k-dp">—</b><span>cohort release ε</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="panes">
+    <div class="pane">
+      <div class="ph"><h2>Glucose · CGM vs replica</h2><span class="muted">held-out day · dots observed · grey truth · cyan replica, re-anchored every 6 h</span></div>
+      <canvas id="c-g" width="1100" height="230"></canvas>
+    </div>
+    <div class="pane">
+      <div class="ph"><h2>Heart rate · wearable vs replica</h2><span class="muted">gaps are charging and off-wrist</span></div>
+      <canvas id="c-hr" width="1100" height="150"></canvas>
+    </div>
+    <div class="pane">
+      <div class="ph"><h2>Inputs</h2><span class="muted">meal absorption proxy · activity · sleep</span></div>
+      <canvas id="c-u" width="1100" height="90"></canvas>
+    </div>
+    <div class="pane">
+      <div class="ph"><h2>Longitudinal projection · what-if</h2><span class="muted" id="wi-label">baseline day, replica integrated in this browser from exported weights</span></div>
+      <canvas id="c-wi" width="1100" height="200"></canvas>
+    </div>
+  </section>
+  <aside>
+    <h2>Clinical assistant</h2>
+    <div class="muted small">Intent parser + replica rollout. The language model slot is a template; the physiology is the exported ODE running client-side.</div>
+    <div id="chat"></div>
+    <form id="ask"><input id="q" placeholder="what if they skip lunch and walk 30 min at 3pm" autocomplete="off"/><button>ask</button></form>
+    <div class="chips">
+      <button data-q="skip lunch">skip lunch</button>
+      <button data-q="double breakfast">double breakfast</button>
+      <button data-q="walk 40 min at 15:00">walk 40 min at 15:00</button>
+      <button data-q="reset">reset</button>
+    </div>
+  </aside>
+</main>
+
+<section class="lower">
+  <div class="card">
+    <h2>Model performance matrix</h2>
+    <table id="matrix"></table>
+    <p class="muted">Glucose RMSE, mg/dL, held-out days 11–14, identical windows per cell. Rows: extra observation dropout on top of the wearable's own gaps.</p>
+  </div>
+  <div class="card">
+    <h2>Gap filling</h2>
+    <table id="imp"></table>
+    <p class="muted">RMSE over carved-out gaps. Linear interpolation sees both ends of the gap and is not available live; the replica only sees the past.</p>
+    <h2>Edge engine</h2>
+    <div id="edge" class="muted"></div>
+  </div>
+  <div class="card">
+    <h2>Differential privacy · cohort curve</h2>
+    <canvas id="c-dp" width="440" height="150"></canvas>
+    <table id="dp"></table>
+    <p class="muted">Hourly mean glucose across the cohort, true vs released at ε=1. Attacker accuracy on neighbouring cohorts against the (ε, δ) bound.</p>
+  </div>
+</section>
+<footer>Synthetic cohort. Docs: <a href="../docs/index.html">docs/index.html</a> · live app <code>streamlit run app.py</code> · lake <code>outputs/lake/</code></footer>
+<script src="data.js"></script>
+<script src="replica.js"></script>
+<script src="charts.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>AeroTwin — documentation</title>
+<link rel="stylesheet" href="docs.css"/></head>
+<body>
+<nav>
+  <div class="brand">AEROTWIN<br><small>docs v1</small></div>
+  <a href="#overview">Overview</a>
+  <a href="#topology">Pipeline topology</a>
+  <a href="#sim">Simulator</a>
+  <a href="#s2r">Sim-to-real variance</a>
+  <a href="#policy">Policy & training</a>
+  <a href="#rag">Manual retrieval</a>
+  <a href="#chunking">Chunking strategy</a>
+  <a href="#edge">Edge binary</a>
+  <a href="#api">API reference</a>
+  <a href="#drift">Drift & limits</a>
+  <a href="../site/index.html" class="ext">→ live dashboard</a>
+</nav>
+<main>
+<section id="overview">
+  <h1>AeroTwin</h1>
+  <p class="lead">A digital twin for a six-airframe quadrotor swarm. The twin exists to answer one question before every flight: <em>how far will the trained controller's behaviour drift when it leaves the simulator?</em> Everything else — the edge binary, the onboard manual index, the orchestration API — hangs off that number.</p>
+  <table class="facts">
+    <tr><th>Physical asset</th><td>6 × commercial quadrotors, 400 Hz companion-computer control loop</td></tr>
+    <tr><th>Final product</th><td>TorchScript policy + libtorch C++ loop (<code>edge/</code>), gRPC/REST swarm surface (<code>swarm/</code>)</td></tr>
+    <tr><th>Technical bottleneck</th><td>Sim-to-real gap under turbulence; multi-modal retrieval over manuals, CAD, checklists</td></tr>
+    <tr><th>Stack</th><td>PyTorch differentiable simulator · analytic policy gradient · TorchScript · libtorch/CMake · scikit-learn TF-IDF · FastAPI · gRPC proto · raw WebGL</td></tr>
+  </table>
+</section>
+
+<section id="topology">
+  <h2>Pipeline topology</h2>
+<pre class="diagram">
+ sim/quadrotor.py ──► rl/policy.py ──► rl/s2r.py ──► outputs/results.json
+   (Torch, diff.)     (APG, Adam)      (audit)            │
+        │                 │                               ▼
+        │                 └──► edge/export.py ──► policy.pt + weights.json
+        │                                             │
+        ▼                                             ▼
+ outputs/telemetry.jsonl ──► site/data.js      edge/controller.cpp (libtorch, 400 Hz)
+        │                                             ▲
+        ▼                                             │  stdin obs / stdout accel
+ site/index.html (WebGL)  ◄── swarm/api.py ◄── swarm.proto ◄── flight controller bridge
+                                  ▲
+ rag/corpus.py ─► rag/index.py ───┘  POST /v1/query
+</pre>
+</section>
+
+<section id="sim">
+  <h2>Simulator</h2>
+  <p>Reduced quadrotor: position, velocity, and a first-order attitude lag on the commanded acceleration. Rotor dynamics are folded into the lag constant. Wind is a Dryden-style coloured process per axis plus a slow shared gust; drag is quadratic in relative airspeed. Optionally, a downwash term penalises stacking inside a 1.2 m cylinder.</p>
+  <div class="math">
+    <p>State per drone \( (p, v, \theta) \in \mathbb{R}^{3+3+3} \). Commanded world acceleration \( a_c \), realised acceleration lags with \( \tau_a \):</p>
+    <p>\[ \dot a = (a_c - a)/\tau_a, \qquad \dot v = a - \tfrac{1}{2}\rho\, c_d \,|v - w|\,(v - w)/m, \qquad \dot p = v \]</p>
+    <p>Gust field (per axis, discrete): \( w_{t+1} = \alpha w_t + \sigma\sqrt{1-\alpha^2}\,\varepsilon_t \), with \( \alpha = e^{-\Delta t / \tau_w} \).</p>
+  </div>
+  <table>
+    <tr><th>Parameter</th><th>Nominal</th><th>Domain-randomised range</th><th>"Real" world</th></tr>
+    <tr><td>mass \( m \)</td><td>1.45 kg</td><td>× U(0.85, 1.15)</td><td>1.58 kg (payload)</td></tr>
+    <tr><td>attitude lag \( \tau_a \)</td><td>0.10 s</td><td>U(0.07, 0.16)</td><td>0.14 s</td></tr>
+    <tr><td>drag \( c_d \)</td><td>0.30</td><td>U(0.2, 0.45)</td><td>0.42</td></tr>
+    <tr><td>gust σ</td><td>0.6 m/s</td><td>U(0.4, 1.8)</td><td>1.6 m/s</td></tr>
+    <tr><td>gust τ</td><td>2.0 s</td><td>U(1.0, 3.5)</td><td>1.4 s</td></tr>
+    <tr><td>downwash gain</td><td>0</td><td>0</td><td>0.35</td></tr>
+  </table>
+  <p class="note">The "real" world is a held-out parameter set the training loop never sees. It sits inside the randomisation ranges on every axis except downwash, which the training world does not model at all — so the residual gap of the DR policy is mostly the cost of an unmodelled coupling, not of parameter mismatch. It is a stand-in for a flight-test rig, not a claim about any specific airframe.</p>
+</section>
+
+<section id="s2r">
+  <h2>Sim-to-real variance tracking</h2>
+  <p>Two policies are trained with identical architecture and optimiser budget: one in the nominal world, one with per-episode domain randomisation. Each is then flown in its training world and in the held-out real world. The reported quantities:</p>
+  <div class="math">
+    <p>\[ \text{RMSE}_{\text{world}} = \sqrt{\frac{1}{NT}\sum_{i,t} \|p_{i,t} - r_{i,t}\|^2 }, \qquad \text{gap} = \text{RMSE}_{\text{real}} - \text{RMSE}_{\text{sim}} \]</p>
+    <p>\[ \text{worst} = \max_{i,t} \|p_{i,t} - r_{i,t}\| \]</p>
+  </div>
+  <p>Gap is reported as mean ± std across training seeds. A domain-randomised policy should show both a smaller mean gap and a smaller spread; if the spread is not smaller, randomisation is adding variance without transferring. The dashboard table shows every seed so that the reader can check this rather than trust an average.</p>
+  <h3>Boundary statement</h3>
+  <p>Policies are clipped to \( |a_c| \le 6\ \text{m/s}^2 \) per axis. With \( \tau_a = 0.14\ \text{s} \) and a gust step of 1.6 m/s, the tracking error floor is bounded below by the lag response: \( e_{\min} \approx \tau_a \cdot \Delta w \approx 0.22\ \text{m} \). Any reported real-world RMSE below that would indicate leakage from the reference into the observation.</p>
+</section>
+
+<section id="policy">
+  <h2>Policy and training</h2>
+  <p>Observation (12-d): position error to the formation reference, velocity error against the reference velocity (the planner knows its own derivative, so the controller may too), the acceleration currently held by the attitude lag, and the nearest-neighbour offset. Action: world-frame acceleration clipped to the 6 m/s² limit. The network is a two-layer MLP added to a learnable PD prior \( a = k_p e + k_d \dot e + f_\theta(o) \), so the untrained policy is already stable and the network only has to learn the residual — gust anticipation, lag compensation, spacing.</p>
+  <p>Because the simulator is written in Torch, the loss is differentiated directly through the rollout (analytic policy gradient). Loss terms: squared tracking error, action effort, and a hinge on inter-drone spacing below 1.5 m. Gradients are clipped at 1.0. This replaces PPO here because a differentiable sim makes it the cheaper and lower-variance estimator; a PPO fallback would be needed for a non-differentiable flight-log replay.</p>
+</section>
+
+<section id="rag">
+  <h2>Onboard manual retrieval</h2>
+  <p>Three document families with different structure: regulatory sections (prose paragraphs), CAD part sheets (field tables with dimension callouts), and anomaly checklists (ordered steps). The pilot's query is short and colloquial ("motor running hot what do we do"), while the sources are formal. The index has to bridge that with no network access.</p>
+  <p>Offline the encoder is TF-IDF over word 1-2-grams stacked with character 3-5-grams; a small synonym expansion covers the pilot-speak to regulation-speak gap. On the aircraft this slot is a local sentence encoder; the chunking and evaluation harness do not change.</p>
+  <p>Evaluation is recall@3 over planted queries phrased away from the source wording, broken down by family so a strong regulation score cannot hide weak CAD retrieval.</p>
+</section>
+
+<section id="chunking">
+  <h2>Chunking strategy for multi-modal CAD drawings</h2>
+  <table>
+    <tr><th>Family</th><th>Chunk unit</th><th>Prefix</th><th>Why</th></tr>
+    <tr><td>manual</td><td>paragraph</td><td>section id + title + topic key</td><td>Regulatory intent lives in single paragraphs; filler paragraphs must not dilute the operative one.</td></tr>
+    <tr><td>cad</td><td>one row per field, plus one sheet summary</td><td>part number + name</td><td>A pilot asks for one dimension. Row-level chunks make "arm length" hit the 380 mm callout, not the whole sheet.</td></tr>
+    <tr><td>checklist</td><td>one step</td><td>anomaly id + trigger</td><td>Steps are ordered; returning the trigger with each step keeps them attributable.</td></tr>
+  </table>
+  <p>Document scoring collapses chunk hits: best chunk score plus 0.2 × second-best. This rewards documents where two rows agree with the query without letting long documents win by volume.</p>
+</section>
+
+<section id="edge">
+  <h2>Edge control binary</h2>
+  <p><code>edge/export.py</code> traces the trained policy to TorchScript and writes a plain JSON weight dump. <code>edge/controller.cpp</code> loads the TorchScript module via libtorch, reads one 12-float observation per line, and writes 3 accelerations per line at a fixed rate with a missed-deadline counter. The stdin/stdout contract keeps the flight-controller bridge trivial and lets the loop be tested with a file.</p>
+  <pre>cmake -S edge -B edge/build -DCMAKE_PREFIX_PATH=/opt/libtorch
+cmake --build edge/build
+./edge/build/aerotwin_edge outputs/edge/policy.pt 400 &lt; obs.txt</pre>
+  <p class="note">This repository was built on a machine without a C++ toolchain; the CMake project is provided and the TorchScript artefact is verified against eager PyTorch (max abs diff reported in <code>results.json</code>), but the binary itself is not compiled here.</p>
+</section>
+
+<section id="api">
+  <h2>API reference</h2>
+  <h3>gRPC — <code>swarm/swarm.proto</code></h3>
+  <table>
+    <tr><th>RPC</th><th>In</th><th>Out</th><th>Notes</th></tr>
+    <tr><td>StreamTelemetry</td><td>stream Telemetry</td><td>stream Correction</td><td>Bidirectional; one Correction per Telemetry with a reason code</td></tr>
+    <tr><td>SetFormation</td><td>FormationRequest</td><td>Ack</td><td>Rejects spacing &lt; 1 m</td></tr>
+    <tr><td>Query</td><td>ManualQuery</td><td>ManualAnswer</td><td>Onboard retrieval, top-k passages</td></tr>
+    <tr><td>Health</td><td>Empty</td><td>HealthReport</td><td>Policy hash, loop rate, missed deadlines, current S2R gap</td></tr>
+  </table>
+  <h3>REST mirror — <code>swarm/api.py</code></h3>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Body</th><th>Returns</th></tr>
+    <tr><td>GET</td><td>/v1/health</td><td>—</td><td>HealthReport JSON</td></tr>
+    <tr><td>POST</td><td>/v1/formation</td><td>{pattern, radius_m, altitude_m, spacing_min_m}</td><td>{ok, detail}</td></tr>
+    <tr><td>POST</td><td>/v1/query</td><td>{text, top_k}</td><td>{passages: [...]}</td></tr>
+    <tr><td>GET</td><td>/v1/telemetry/latest</td><td>—</td><td>last six frames</td></tr>
+  </table>
+</section>
+
+<section id="drift">
+  <h2>Drift handling and limits</h2>
+  <ul>
+    <li><b>Parameter drift.</b> Mass, drag and lag drift with payload and battery sag. The S2R audit is the gate: a policy ships only if the DR gap and spread beat the nominal policy on every seed.</li>
+    <li><b>Wind regime drift.</b> The real gust σ exceeds the nominal training σ by 2.7×. Randomisation ranges must bracket flight-test conditions, not just nominal ones.</li>
+    <li><b>Manual drift.</b> Regulations change; the index is rebuilt from source at every release and recall@3 is re-run on the planted set.</li>
+    <li><b>Not modelled.</b> Rotor aerodynamics, battery-dependent thrust, GNSS multipath, inter-drone comms latency. Each would widen the real-world gap.</li>
+  </ul>
+</section>
+</main>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']]}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body></html>

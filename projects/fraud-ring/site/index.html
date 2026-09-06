@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Fraud ring — case packs</title>
+<style>
+  body{margin:0;background:#16120f;color:#f2e6d8;font:15px/1.4 Georgia,serif}
+  header{padding:22px 26px;border-bottom:3px solid #d4a017}
+  .wrap{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 80px)}
+  aside{background:#211c16;padding:14px;border-right:1px solid #3a3228}
+  main{padding:16px 22px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{border-bottom:1px solid #3a3228;padding:6px;text-align:left}
+  .pack{cursor:pointer}
+  .pack.on{background:#3a2a10}
+  .fam{color:#e8a317}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.14em;font-size:11px;color:#d4a017">ENTITY GRAPH · PR-AUC · REVIEW PACKS</div>
+  <h1>Shared devices look like a family until the edges say otherwise</h1>
+  <p>PR-AUC <b id="pr">—</b> · packs <b id="np">—</b> · review time <b id="rt">—</b> · false families <b id="ff">—</b></p>
+</header>
+<div class="wrap">
+  <aside>
+    <h3>Case packs</h3>
+    <table id="list"></table>
+  </aside>
+  <main>
+    <h2 id="title">Select a pack</h2>
+    <p id="sent"></p>
+    <table id="nodes"></table>
+    <p style="opacity:.7">Tabular-only vs tabular+graph is the argument. False families are reported as a number. docs/METHOD.md</p>
+  </main>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("pr").textContent = C["PR-AUC"] ?? C.pr_auc_graph ?? "run main.py";
+document.getElementById("np").textContent = C["Cases packed"] ?? (C.packs||[]).length;
+document.getElementById("rt").textContent = C["Review time"] ?? "—";
+document.getElementById("ff").textContent = C["False family"] ?? C.false_families ?? "—";
+const packs = C.packs || C.case_packs || [];
+const list = document.getElementById("list");
+list.innerHTML = "<tr><th>#</th><th>nodes</th><th>flag</th></tr>" +
+  packs.map((p,i) => `<tr class="pack" data-i="${i}"><td>${i+1}</td><td>${(p.nodes||[]).length}</td><td class="${(p.true_fraud_in_pack===0)?"fam":""}">${p.true_fraud_in_pack===0?"family?":"ring"}</td></tr>`).join("");
+list.onclick = e => {
+  const tr = e.target.closest(".pack"); if (!tr) return;
+  document.querySelectorAll(".pack").forEach(x => x.classList.remove("on"));
+  tr.classList.add("on");
+  const p = packs[+tr.dataset.i];
+  document.getElementById("title").textContent = "Pack " + ( +tr.dataset.i + 1);
+  document.getElementById("sent").textContent = p.sentence || "";
+  document.getElementById("nodes").innerHTML = "<tr><th>account</th><th>shared</th><th>velocity</th></tr>" +
+    (p.detail || p.nodes || []).map(n => {
+      if (typeof n === "object") return `<tr><td>${n.id}</td><td>${n.shared||""}</td><td>${n.velocity||""}</td></tr>`;
+      return `<tr><td>${n}</td><td></td><td></td></tr>`;
+    }).join("");
+};
+</script>
+</body>
+</html>

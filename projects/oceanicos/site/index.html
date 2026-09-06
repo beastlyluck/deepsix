@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>OceanicOS — terminal ops</title>
+<link rel="stylesheet" href="theme.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker">OCEANICOS · AUTOMATED TERMINAL · <span id="hz">—</span> H WINDOW</div>
+    <h1>Same cranes, same fleet, a yard that does not fill up</h1>
+  </div>
+  <div class="kpis">
+    <div><b id="k-mph">—</b><span>moves / hour</span></div>
+    <div><b id="k-stall">—</b><span>crane stall, min / crane</span></div>
+    <div><b id="k-empty">—</b><span>AGV empty travel</span></div>
+    <div><b id="k-yard">—</b><span>yard peak saturation</span></div>
+    <div><b id="k-turn">—</b><span>mean turnaround</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="map">
+    <div class="bar">
+      <div class="seg">
+        <button data-r="matrix" class="on">assignment matrix</button>
+        <button data-r="greedy">greedy dispatch</button>
+      </div>
+      <span id="clock">00:00</span>
+      <input id="scrub" type="range" min="0" max="10" value="0"/>
+      <button id="play">play</button>
+      <label class="muted"><input type="checkbox" id="iso" checked/> orthographic</label>
+    </div>
+    <canvas id="port" width="1180" height="560"></canvas>
+    <div class="berths" id="berths"></div>
+  </section>
+  <aside>
+    <h2>Throughput</h2>
+    <div class="gauges">
+      <canvas id="g1" width="140" height="90"></canvas>
+      <canvas id="g2" width="140" height="90"></canvas>
+    </div>
+    <h2>Yard saturation</h2>
+    <canvas id="heat" width="300" height="150"></canvas>
+    <h2>Event stream <span class="muted" id="evn"></span></h2>
+    <pre id="log"></pre>
+  </aside>
+</main>
+
+<section class="lower">
+  <div class="card">
+    <h2>Policy benchmark</h2>
+    <table id="bench"></table>
+    <p class="muted">Identical vessel schedule, layout and fleet. Matrix = Hungarian AGV pairing on hook lateness, block choice on dwell forecast, saturation and predicted lane traffic.</p>
+  </div>
+  <div class="card">
+    <h2>Spatio-temporal traffic model</h2>
+    <table id="st"></table>
+    <p class="muted">MAE of AGV density around each block. K = diffusion hops on the route-overlap graph. Graph helps at the horizon the dispatcher uses; longer horizons are crane-schedule dominated.</p>
+  </div>
+  <div class="card">
+    <h2>Hierarchical volume forecast</h2>
+    <canvas id="hier" width="440" height="170"></canvas>
+    <table id="hiert"></table>
+    <p class="muted">Weekly boxes, terminal → line → service. Base forecasts disagree with themselves by <span id="incoh">—</span> boxes/week; MinT reconciliation makes them add up.</p>
+  </div>
+  <div class="card">
+    <h2>Dwell by shipping line</h2>
+    <table id="dwell"></table>
+    <p class="muted">Log-normal dwell with empirical-Bayes shrinkage toward the terminal prior. P(&gt;5 d) decides gate-side vs deep stacking.</p>
+  </div>
+</section>
+<footer>Synthetic terminal. Docs: <a href="../docs/index.html">docs/index.html</a> · live replay <code>uvicorn api.server:app</code> → <code>ws://…/v1/stream/matrix</code> · event store <code>outputs/events.*</code></footer>
+<script src="data.js"></script>
+<script src="port.js"></script>
+<script src="panels.js"></script>
+</body>
+</html>

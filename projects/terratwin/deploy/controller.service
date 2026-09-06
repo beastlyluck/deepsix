@@ -1,0 +1,13 @@
+[Unit]
+Description=TerraTwin closed-loop climate
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/terratwin
+ExecStart=/opt/terratwin/.venv/bin/python -c "from control.loop import run; from main import load_cfg; import numpy as np; run(load_cfg(), np.random.default_rng(0), w=np.load('outputs/q_weights.npy'))"
+Restart=on-failure
+RestartSec=8
+
+[Install]
+WantedBy=multi-user.target

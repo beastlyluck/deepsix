@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "CascadeAlert",
+  "namespace": "gridpulse.v1",
+  "doc": "Emitted by the SGC scorer when a bus crosses the risk threshold. Topic: grid.alert.cascade.",
+  "fields": [
+    {"name": "alert_id", "type": "string"},
+    {"name": "ts_ms", "type": "long", "logicalType": "timestamp-millis"},
+    {"name": "bus_id", "type": "int"},
+    {"name": "risk", "type": "double", "doc": "P(lost service | current state), 0..1"},
+    {"name": "severity", "type": {"type": "enum", "name": "Severity", "symbols": ["WATCH", "WARN", "CRITICAL"]}},
+    {"name": "contributing_lines", "type": {"type": "array", "items": "int"}},
+    {"name": "model_sha", "type": "string"},
+    {"name": "window_end_ms", "type": "long"}
+  ]
+}

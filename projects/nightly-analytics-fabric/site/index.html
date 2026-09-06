@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Nightly fabric — publish gate</title>
+<style>
+  body{margin:0;background:#111;color:#c8f0c8;font:14px/1.4 "Cascadia Code",Consolas,monospace}
+  header{padding:20px;border-bottom:1px solid #2f4f2f}
+  .row{display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:16px}
+  table{width:100%;border-collapse:collapse}
+  td,th{border-bottom:1px solid #2a3a2a;padding:5px;text-align:left}
+  .fail{color:#ff6b6b} .ok{color:#7dffa0}
+</style>
+</head>
+<body>
+<header>
+  <div style="opacity:.6;letter-spacing:.14em;font-size:11px">DBT-STYLE DAG · SQLITE · 90 NIGHTS</div>
+  <h1>If a test fails, yesterday’s numbers stay up.</h1>
+  <p>SLA <b id="sla">—</b> · tests <b id="tests">—</b> · blocked nights <b id="fail">—</b></p>
+</header>
+<div class="row">
+  <div>
+    <svg id="g" viewBox="0 0 720 200" width="100%"></svg>
+    <h3>Blocked nights</h3>
+    <table id="blk"></table>
+  </div>
+  <div>
+    <h3>DAG</h3>
+    <p>stg_enrolments → marts<br>stg_invoices → mart_late_invoices<br>stg_energy → mart_energy_intensity</p>
+    <h3>Contracts</h3>
+    <p>not_null · unique · accepted_values · freshness · relationships</p>
+    <p>Night 23 null invoice ids — gate holds.<br>Night 40 double load — staging dedupes, tests pass.</p>
+    <p style="opacity:.6">docs/METHOD.md · python main.py</p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("sla").textContent = C["Nightly SLA"] || "run main.py";
+document.getElementById("tests").textContent = C.Tests ?? "—";
+document.getElementById("fail").textContent = C["Failed days / qtr"] ?? "—";
+document.getElementById("blk").innerHTML = "<tr><th>night</th><th>fault</th><th>failed</th></tr>" +
+  (C.blocked_nights || []).map(b => `<tr class="fail"><td>${b.night}</td><td>${b.fault}</td><td>${(b.failed||[]).join("; ")}</td></tr>`).join("");
+const nights = C.published_series || Array.from({length:90}, (_,i) => 2100 + 8*Math.sin(i/7));
+const blocked = new Set((C.blocked_nights || []).map(b => b.night));
+const path = nights.map((y,i) => ((i?"L":"M")+(20+i*7.6)+","+(180-((y-2000)/200)*150))).join(" ");
+let lines = '<path d="'+path+'" fill="none" stroke="#7dffa0" stroke-width="1.4"/>';
+blocked.forEach(n => { const x=20+n*7.6; lines += '<line x1="'+x+'" x2="'+x+'" y1="10" y2="190" stroke="#ff6b6b" stroke-dasharray="3 3"/>'; });
+document.getElementById("g").innerHTML = lines;
+</script>
+</body>
+</html>

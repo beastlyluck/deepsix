@@ -1,0 +1,10 @@
+numpy>=1.24
+scipy>=1.10
+pyarrow>=14
+onnx>=1.15
+
+# live app
+streamlit>=1.30
+plotly>=5.18
+
+# phone runtime (not used here): onnxruntime-mobile, Core ML / NNAPI delegate

@@ -1,0 +1,1 @@
+window.CASE = {"24h MAPE": "5.5%", "Pinball 0.9": 0.011, "Buildings": 12, "Retrain": "weekly", "PSI": {"temp": 2.886, "occupancy": 0.0, "lag24": 0.451}, "drift_gate": "STOP: retrain", "champion_MAE_kWh": 60.7, "challenger_MAE_kWh": 66.5, "swap_to_challenger": false};

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Campus load — facilities desk</title>
+<style>
+  body{margin:0;background:#1c1e17;color:#efe6c4;font:14px/1.4 "IBM Plex Sans",sans-serif}
+  header{padding:20px;background:#12140f}
+  .gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px}
+  .g{background:#2a2d22;padding:12px}
+  .g b{font-size:22px;display:block}
+  main{padding:0 20px 32px}
+</style>
+</head>
+<body>
+<header>
+  <div style="opacity:.6;font-size:11px">CLAYTON PRECINCT · 12 BUILDINGS · SEED 5</div>
+  <h1>24-hour kWh and the day the winter champion dies</h1>
+  <p>Gate <b id="gate">—</b> · swap challenger <b id="swap">—</b></p>
+</header>
+<div class="gauges">
+  <div class="g"><span>24h MAPE</span><b id="mape">—</b></div>
+  <div class="g"><span>q0.9 pinball</span><b id="pin">—</b></div>
+  <div class="g"><span>champ MAE</span><b id="ch">—</b></div>
+  <div class="g"><span>challenger MAE</span><b id="cl">—</b></div>
+</div>
+<main>
+  <h3>PSI (eval vs train)</h3>
+  <table id="psi" style="border-collapse:collapse"></table>
+  <p>Early-summer heat is injected in the last 14 days. If temp PSI &gt; 0.2 the gate should read STOP. That is the interview, not the MAPE.</p>
+  <p>docs/METHOD.md · notebook <code>notebooks/drift_gate.ipynb</code> · <code>python main.py</code></p>
+</main>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("mape").textContent = C["24h MAPE"] || "run main.py";
+document.getElementById("pin").textContent = C["Pinball 0.9"] ?? "—";
+document.getElementById("ch").textContent = C.champion_MAE_kWh ?? "—";
+document.getElementById("cl").textContent = C.challenger_MAE_kWh ?? "—";
+document.getElementById("gate").textContent = C.drift_gate ?? "—";
+document.getElementById("swap").textContent = C.swap_to_challenger ? "YES" : "no";
+document.getElementById("psi").innerHTML = "<tr><th>feature</th><th>PSI</th></tr>" +
+  Object.entries(C.PSI || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+</script>
+</body>
+</html>

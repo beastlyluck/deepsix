@@ -1,0 +1,7 @@
+torch>=2.2            # PINN only
+numpy>=1.24
+scipy>=1.10           # sparse power flow, HiGHS LP
+scikit-learn>=1.3     # SGC readout
+duckdb>=0.10          # feature store; falls back to sqlite when absent
+
+# streaming layer (not run here): Kafka + Flink 1.18, avro-confluent format

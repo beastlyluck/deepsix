@@ -1,0 +1,2 @@
+numpy>=1.24
+# PyYAML is only for reading deploy/k8s.yaml in reviews; the loop itself is toml + numpy.

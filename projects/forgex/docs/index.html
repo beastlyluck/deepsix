@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>ForgeX — documentation</title>
+<link rel="stylesheet" href="docs.css"/>
+</head>
+<body>
+<nav>
+  <a href="#fusion">Fusion</a>
+  <a href="#stft">STFT at the edge</a>
+  <a href="#safety">Safety override</a>
+  <a href="#api">Artefact</a>
+</nav>
+<article>
+  <h1>ForgeX notes</h1>
+  <p>Late-fusion cell twin. Acoustics, current and a camera are scored separately, then combined. The interlock is not part of the model.</p>
+
+  <h2 id="fusion">Late-fusion pipeline</h2>
+  <div class="flow">
+    <p>1. Cycle ends. Three feature blocks land: 9 acoustic, 4 current, 9 vision.</p>
+    <p>2. IsolationForest on the stack — unsupervised trip for the desk.</p>
+    <p>3. Logistic on the same stack — published score, with leave-one-block-out AUC.</p>
+    <p>4. Residual from the friction/thermal model is a second input to the FSM, not a fourth feature. Mixing it into the logit hides a cooling-duct fault as “just another score.”</p>
+  </div>
+  <p>If acoustic AUC stays high and vision AUC collapses when leaks are removed from the label set, the camera is doing its job and only its job.</p>
+
+  <h2 id="stft">Raw acoustic to bands</h2>
+  <pre>x, 16 kHz, 0.25 s
+stft nperseg=256, overlap=128
+band means: 80–160, 160–320, 320–400, 400–440,
+            440–520, 520–800, 800–1600, 1600–4000 Hz
++ crest factor</pre>
+  <p>The 400–440 Hz bin is the mesh. Wear lives in the neighbouring bins. We do not ship a spectrogram image model to the drive cabinet.</p>
+
+  <h2 id="safety">Override flowchart</h2>
+  <pre>score &lt; 0.35 and residual &lt; 4 K     → NORMAL
+score ≥ 0.35 or residual ≥ 4 K      → WATCH  (still moving)
+score ≥ 0.65 or residual ≥ 8 K      → HOLD   (motion gated)
+stall flag OR two HOLDs in 5 cycles → ESTOP
+HOLD / ESTOP leave only on reset=1</pre>
+  <p>A score that dips after HOLD is not a reset. That path is how a cracked reducer is run for another hour.</p>
+
+  <h2 id="api">Edge artefact</h2>
+  <p><code>outputs/weights.json</code> holds mean, scale, coef, intercept. <code>edge.actuator.score</code> is one dot product. Latency is printed in microseconds on each run.</p>
+  <p>Open the board: <a href="../site/index.html">site/index.html</a></p>
+</article>
+</body>
+</html>

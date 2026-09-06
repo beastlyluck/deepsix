@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>SKU hierarchy — MinT wall</title>
+<style>
+  body{margin:0;background:#f7f2e8;color:#2a2418;font:15px Georgia,serif}
+  header{padding:24px 28px;background:#2a2418;color:#f7f2e8}
+  .k{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 28px}
+  .c{background:#fff;border:1px solid #d4c8b0;padding:12px}
+  main{padding:0 28px 36px}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.14em;font-size:11px">TOTAL → STATE → STORE → DEPT → SKU</div>
+  <h1>Forecasts that add up to the chain total</h1>
+</header>
+<div class="k">
+  <div class="c">WRMSSE MinT <b id="w">—</b></div>
+  <div class="c">WRMSSE base <b id="b">—</b></div>
+  <div class="c">Coherence <b id="c">—</b></div>
+  <div class="c">Base incoherence <b id="i">—</b></div>
+</div>
+<main>
+  <p>If MinT does not beat base at total, the covariance is junk. Coherence after MinT should be ~0. docs/METHOD.md</p>
+  <pre>python main.py</pre>
+</main>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("w").textContent = C.WRMSSE ?? "run main.py";
+document.getElementById("b").textContent = C["WRMSSE base (unreconciled)"] ?? "—";
+document.getElementById("c").textContent = C["Coherence error"] ?? "—";
+document.getElementById("i").textContent = C["Base incoherence (max abs)"] ?? "—";
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <path d="M50 10 L90 45 L50 80 L10 45 Z" stroke="#FFD700" stroke-width="4"/>
+  <path d="M50 25 L75 45 L50 65 L25 45 Z" fill="#FFD700" opacity="0.25"/>
+  <text x="50" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#FFD700" font-family="Georgia, serif">VI</text>
+</svg>

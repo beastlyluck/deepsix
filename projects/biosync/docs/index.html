@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>BioSync — documentation</title>
+<link rel="stylesheet" href="docs.css"/></head>
+<body>
+<nav>
+  <div class="brand">BIOSYNC<br><small>docs v1</small></div>
+  <a href="#overview">Overview</a>
+  <a href="#topology">Pipeline topology</a>
+  <a href="#stream">Secure data stream</a>
+  <a href="#physio">Physiology stand-in</a>
+  <a href="#node">Neural ODE</a>
+  <a href="#adjoint">Reverse mode through RK4</a>
+  <a href="#baseline">Recurrent baseline</a>
+  <a href="#matrix">Performance matrix</a>
+  <a href="#impute">Imputation</a>
+  <a href="#dp">Differential privacy</a>
+  <a href="#edge">Edge engine</a>
+  <a href="#drift">Drift & limits</a>
+  <a href="../site/index.html" class="ext">→ live dashboard</a>
+</nav>
+<main>
+<section id="overview">
+  <h1>BioSync</h1>
+  <p class="lead">A patient-specific continuous-time replica of glucose, insulin action and heart rate, trained on what a CGM and a wrist wearable actually deliver: irregular samples, warm-up gaps, charging gaps, Bluetooth dropouts. The engineering question is whether a model defined in continuous time degrades more gracefully than a discrete-time recurrent model when the sensors go quiet — and whether it is small enough to run on the phone that owns the data.</p>
+  <table class="facts">
+    <tr><th>Physical asset</th><td>Person + CGM (5 min) + wrist wearable (1 min), phone as the compute node</td></tr>
+    <tr><th>Final product</th><td>Edge inference engine: ONNX dynamics graph + RK4 runtime, 22 µs per 5-minute step, per-patient embedding</td></tr>
+    <tr><th>Technical bottleneck</th><td>Continuous-time modelling under sparsity and device dropout; privacy-preserving cohort release</td></tr>
+    <tr><th>Stack</th><td>NumPy only for modelling (hand-written reverse mode) · pyarrow Parquet lake · onnx graph builder · Streamlit + Plotly live app · canvas static mirror with the replica ported to JS</td></tr>
+  </table>
+</section>
+
+<section id="topology">
+  <h2>Pipeline topology</h2>
+<pre class="diagram">
+ wearable ──TLS──► ingest (HMAC device id → pseudonym) ──► data/lake.py  Parquet, hive by pseudonym/day
+                                                                │
+ physio/sim.py (stand-in for the person) ───────────────────────┤
+                                                                ▼
+ models/windows.py  5-min grid, 6 h windows, masks ──► models/node.py  Neural ODE, numpy RK4 + reverse mode
+                                                    ├─► models/esn.py   echo-state baseline
+                                                    └─► models/evaluate.py  matrix: dropout × model × horizon
+                                                                │
+ mlops/impute.py  ffill / linear / replica ◄────────────────────┤
+ privacy/dp.py    Gaussian mechanism + attacker check ◄─────────┤
+                                                                ▼
+ edge/export_onnx.py  dynamics.onnx     edge/engine.py  weights.npz + RK4  ──► phone
+                                                                │
+                                        outputs/dashboard.json ─┴─► app.py (Streamlit) · site/ (static, replica.js)
+</pre>
+</section>
+
+<section id="stream">
+  <h2>HIPAA-aligned data stream</h2>
+  <table>
+    <tr><th>Layer</th><th>Control</th></tr>
+    <tr><td>Transport</td><td>Device → ingest over TLS 1.3 with certificate pinning; no payload leaves the phone without user-scoped token.</td></tr>
+    <tr><td>Identity</td><td>Ingest computes <code>HMAC-SHA256(tenant_key, device_id)[:16]</code>; the lake never stores the device id, name, DOB or any free text. Re-identification needs the tenant key, which lives in the KMS, not in the lake.</td></tr>
+    <tr><td>Minimum necessary</td><td>Schema is eight columns: day, minute, cgm, hr, carbs, activity, asleep. There is no field for notes.</td></tr>
+    <tr><td>At rest</td><td>Parquet, zstd, partitioned <code>pseudonym=…/day=NN.parquet</code>; bucket-level encryption; row-level access by pseudonym.</td></tr>
+    <tr><td>Compute placement</td><td>Per-patient training and inference run on-device. Only DP-protected cohort aggregates leave (see below).</td></tr>
+    <tr><td>Audit</td><td>Every read of a pseudonym partition is logged with purpose code; model artefacts carry the training data hash.</td></tr>
+  </table>
+</section>
+
+<section id="physio">
+  <h2>Physiology stand-in</h2>
+  <p>Bergman's minimal model with two-compartment meal absorption and activity uptake, plus first-order heart rate. Per-patient parameters are drawn once, so each person's dynamics are genuinely different and a single shared model cannot fit everyone without a patient-specific term.</p>
+  <div class="math">
+    \[ \dot G = -p_1 (G - G_b) - X G - k_a\, a(t)\, G + R_a(t), \qquad \dot X = -p_2 X + p_3 (I - I_b) \]
+    \[ \dot I = -n (I - I_b) + \gamma\, \max(G - h, 0), \qquad \dot{HR} = -\bigl(HR - HR_{\text{rest}} - g\,a(t) + 8\,s(t)\bigr)/\tau_{hr} + \sigma\xi \]
+    <p>\( R_a \) is the output of a two-compartment chain fed by carbohydrate impulses. Observation: CGM at 5 min with 5 mg/dL noise and warm-up gaps of 1–2.5 h on 60 percent of days; HR at 1 min with 1.5 bpm noise, charging gaps, and 4 percent random dropouts.</p>
+  </div>
+</section>
+
+<section id="node">
+  <h2>Neural ODE</h2>
+  <div class="math">
+    \[ \dot z = f_\theta(z, u), \qquad z = \bigl[G/100,\ HR/100,\ x_1,\ x_2\bigr], \qquad u = \bigl[\text{meal proxy},\ a,\ s,\ e_p\bigr] \]
+    <p>\( f_\theta \) is a one-hidden-layer tanh MLP (10 → 32 → 4, 484 parameters). \( e_p \in \mathbb R^3 \) is a learned embedding per patient — the "patient-specific" part of the replica. Integration is RK4 with \( \Delta t = 5 \) min. The two hidden latents are free to become insulin action and meal absorption; nothing forces them to.</p>
+    <p>Loss over a 6-hour window with observation mask \( m \):</p>
+    \[ \mathcal L = \frac{1}{\sum m}\sum_{t,j} m_{t,j}\,\bigl(z_{t,j} - y_{t,j}\bigr)^2, \quad j \in \{G, HR\} \]
+    <p>Gaps cost nothing and need no filling: the state simply integrates through them. That is the whole argument for continuous time.</p>
+  </div>
+</section>
+
+<section id="adjoint">
+  <h2>Reverse mode through RK4, by hand</h2>
+  <p>Discretise-then-optimise. Each forward step stores the four stage inputs; the backward pass replays them in reverse and accumulates vector–Jacobian products. For one step with \( k_i = f(z_i, u) \):</p>
+  <div class="math">
+    \[ \bar k_1 = \tfrac{h}{6}\bar z',\ \ \bar k_2 = \tfrac{h}{3}\bar z',\ \ \bar k_3 = \tfrac{h}{3}\bar z',\ \ \bar k_4 = \tfrac{h}{6}\bar z' \]
+    \[ (\bar z_4, \bar u_4, \bar\theta_4) = \text{vjp}_f(z_4, \bar k_4);\quad \bar k_3 \mathrel{+}= h\,\bar z_4 \]
+    \[ (\bar z_3, \bar u_3, \bar\theta_3) = \text{vjp}_f(z_3, \bar k_3);\quad \bar k_2 \mathrel{+}= \tfrac h2\,\bar z_3 \]
+    \[ (\bar z_2, \bar u_2, \bar\theta_2) = \text{vjp}_f(z_2, \bar k_2);\quad \bar k_1 \mathrel{+}= \tfrac h2\,\bar z_2 \]
+    \[ (\bar z_1, \bar u_1, \bar\theta_1) = \text{vjp}_f(z, \bar k_1);\qquad \bar z = \bar z' + \textstyle\sum_i \bar z_i,\quad \bar\theta \mathrel{+}= \textstyle\sum_i \bar\theta_i \]
+    <p>with the MLP's VJP: \( \bar h = (\bar k\, W_2^\top) \odot (1 - h^2) \), \( \bar W_2 = h^\top \bar k \), \( \bar W_1 = a^\top \bar h \), \( \bar a = \bar h\, W_1^\top \). The input gradient \( \bar u \) is what trains the patient embedding. Optimiser is Adam with gradient clipping at 5.</p>
+  </div>
+  <p>The continuous adjoint method would save memory; at 72 steps of a 4-state system memory is not the constraint, and discretise-then-optimise gives exact gradients of the integrator the phone actually runs. The engine and the training integrator agree to machine precision (reported in <code>results.json</code>).</p>
+</section>
+
+<section id="baseline">
+  <h2>Recurrent baseline</h2>
+  <p>An echo-state network: fixed sparse reservoir (300 units, spectral radius 0.9, leak 0.3), ridge readout. Inputs on the 5-minute grid: forward-filled glucose and HR, a mask channel per signal, and the same exogenous inputs. Trained one-step-ahead on observed values; evaluated by rolling forward and feeding its own forecasts back. It is a fair stand-in for a GRU on this budget and, importantly, has the same failure mode: it needs a value in every slot.</p>
+  <p>Persistence (last observed value carried forward) is the third row of the matrix, because a forecaster that does not beat it is not a forecaster.</p>
+</section>
+
+<section id="matrix">
+  <h2>Model performance matrix</h2>
+  <p>Held-out days 11–14, 12 windows per patient, identical windows per cell. Rows add extra random dropout on top of the wearable's own gaps. Columns are 30, 60 and 120 minutes ahead. The shipped numbers (see dashboard) show the ODE moving from roughly 13 to 15 mg/dL at 60 minutes as dropout goes from 0 to 60 percent, while the recurrent model goes from beating persistence to being several times worse than it. That gap, not the headline RMSE, is the finding.</p>
+</section>
+
+<section id="impute">
+  <h2>Imputation</h2>
+  <table>
+    <tr><th>Method</th><th>Uses future?</th><th>Live?</th><th>Notes</th></tr>
+    <tr><td>Forward fill</td><td>no</td><td>yes</td><td>What most apps do. Worst on long gaps across meals.</td></tr>
+    <tr><td>Linear interpolation</td><td>yes</td><td>no</td><td>Best offline because it sees the value at the end of the gap. Not a forecast.</td></tr>
+    <tr><td>Replica rollout</td><td>no</td><td>yes</td><td>Integrates through the gap from the last observation using known meals and activity. The only live method that beats forward fill.</td></tr>
+  </table>
+  <p>Scoring carves 30 extra gaps of 30–120 minutes into stretches that were observed, so the fill can be checked against truth. Reporting the linear result is deliberate: it is the ceiling a live method cannot reach.</p>
+</section>
+
+<section id="dp">
+  <h2>Differential privacy layer</h2>
+  <div class="math">
+    <p>Release: mean glucose by hour of day across the cohort, each patient clipped to \([40, 400]\) mg/dL. Replacing one patient moves each hourly mean by at most \((400-40)/n\), so the \( L_2 \) sensitivity of the 24-vector is</p>
+    \[ S = \frac{360}{n}\sqrt{24}, \qquad \sigma = \frac{S\sqrt{2\ln(1.25/\delta)}}{\varepsilon} \]
+    <p>Gaussian mechanism, \( \delta = 10^{-5} \). This is the classic bound and is conservative relative to the analytic Gaussian mechanism.</p>
+  </div>
+  <h3>Validation</h3>
+  <p>Two neighbouring cohorts differ in one patient whose curve is replaced by a worst-case outlier. A likelihood-ratio attacker sees one release and guesses which cohort produced it, 4000 times. Accuracy is compared against \( e^\varepsilon/(1+e^\varepsilon) + \delta \). At \( \varepsilon = 0.5, 1, 2 \) the attacker sits near chance and well inside the bound; the table on the dashboard shows the actual numbers rather than asserting them.</p>
+</section>
+
+<section id="edge">
+  <h2>Edge inference engine</h2>
+  <p><code>edge/export_onnx.py</code> builds the dynamics graph node by node (MatMul → Add → Tanh → MatMul → Add) and runs <code>onnx.checker</code>; the RK4 loop stays in app code so the step can follow the sensor cadence. <code>edge/engine.py</code> is the reference runtime: loads <code>weights.npz</code> (weights, per-patient embeddings, step), steps at 22 µs on a laptop core, and is checked against the training integrator on a real window (max abs diff 0). A phone waking for 200 ms every five minutes has budget for roughly 9000 steps — enough to re-integrate the whole day on every wake.</p>
+</section>
+
+<section id="drift">
+  <h2>Drift handling and limits</h2>
+  <ul>
+    <li><b>Physiological drift.</b> Insulin sensitivity changes with illness, medication and fitness. The embedding \( e_p \) is the cheap knob: re-fit it nightly on-device with the dynamics frozen; re-train the dynamics only when cohort-level residuals trend.</li>
+    <li><b>Sensor drift.</b> CGM bias grows through a sensor's life. Residual mean by sensor-age bucket is the monitor; a bias term per sensor session is the fix.</li>
+    <li><b>Dropout regime drift.</b> The matrix is the contract: the model is evaluated at 0, 30 and 60 percent extra dropout on every release, and a regression at 60 percent blocks the release even if the clean number improves.</li>
+    <li><b>Not modelled.</b> Exogenous insulin, medication, stress, menstrual cycle, sleep quality beyond a binary flag. The stand-in cohort is synthetic; nothing here is validated on people.</li>
+  </ul>
+</section>
+</main>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']]}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body></html>

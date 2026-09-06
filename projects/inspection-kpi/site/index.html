@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>LINE STOP</title>
+<style>
+  body{margin:0;background:#111;color:#f5e642;font:18px/1.3 Impact,sans-serif}
+  .banner{background:#f5e642;color:#111;text-align:center;padding:20px;font-size:36px}
+  table{width:90%;margin:24px auto;border-collapse:collapse;font-family:Georgia,serif;font-size:15px}
+  td,th{border:2px solid #f5e642;padding:10px}
+</style>
+</head>
+<body>
+<div class="banner">STOP THE LINE — repeat fail is the product</div>
+<p style="text-align:center;font-family:Georgia,serif">mAP@0.5 <b id="map">—</b> · PPM (−) <b id="ppm">—</b> · false stops <b id="fs">—</b> · stops/mo <b id="st">—</b></p>
+<table id="par"></table>
+<table id="stn"></table>
+<p style="max-width:640px;margin:16px auto;font-family:Georgia,serif;font-size:15px;color:#ddd">
+mAP is for the vendor. The aisle reads this board. Two fails at one station in a shift freeze the all-clear. docs/METHOD.md
+</p>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("map").textContent = C["mAP@0.5"] ?? "run main.py";
+document.getElementById("ppm").textContent = C["PPM (-)"] ?? "—";
+document.getElementById("fs").textContent = C["False stop"] ?? "—";
+document.getElementById("st").textContent = C.stops_per_month ?? "—";
+document.getElementById("par").innerHTML = "<tr><th>defect</th><th>count</th></tr>" +
+  Object.entries(C.pareto_counts || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+document.getElementById("stn").innerHTML = "<tr><th>station</th><th>PPM</th></tr>" +
+  Object.entries(C.ppm_by_station || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+</script>
+</body>
+</html>

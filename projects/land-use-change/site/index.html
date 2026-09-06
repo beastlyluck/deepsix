@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Land-cover change — unsure stays grey</title>
+<style>
+  body{margin:0;background:#cfd8c8;color:#1c2b1a;font:15px Georgia,serif}
+  main{padding:28px}
+  table{border-collapse:collapse}
+  td,th{border:1px solid #8a9a82;padding:6px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Year-over-year tiles. Grey is a feature.</h1>
+  <p>Accuracy <b id="acc">—</b> · mIoU <b id="iou">—</b> · unsure <b id="u">—</b> · ha became urban <b id="ha">—</b></p>
+  <h3>Per-class IoU</h3>
+  <table id="iouT"></table>
+  <h3>Tiles to check</h3>
+  <table id="chk"></table>
+  <p>Unsure tiles do not vote. docs/METHOD.md · <code>python main.py</code></p>
+</main>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("acc").textContent = C.Accuracy || "run main.py";
+document.getElementById("iou").textContent = C.mIoU ?? "—";
+document.getElementById("u").textContent = C["Unsure tiles"] ?? "—";
+document.getElementById("ha").textContent = C.hectares_became_urban ?? "—";
+document.getElementById("iouT").innerHTML = "<tr><th>class</th><th>IoU</th></tr>" +
+  Object.entries(C.per_class_iou || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+document.getElementById("chk").innerHTML = "<tr><th>row</th><th>col</th><th>entropy</th></tr>" +
+  (C.three_tiles_to_check || []).map(t => `<tr><td>${t.row}</td><td>${t.col}</td><td>${t.entropy}</td></tr>`).join("");
+</script>
+</body>
+</html>

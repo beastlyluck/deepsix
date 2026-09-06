@@ -1,0 +1,27 @@
+:root {
+  --bg: #0b0a09; --panel: #161310; --line: #2a2218; --ink: #f3e6d4;
+  --muted: #8a7760; --melt: #ff6a1a; --warn: #f5c518; --ok: #7dba6a; --stop: #e23b2f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif; }
+header { display: flex; justify-content: space-between; padding: 16px 22px; border-bottom: 2px solid var(--melt); background: #100e0c; }
+.kicker { letter-spacing: .16em; font-size: 11px; color: var(--melt); }
+h1 { margin: 4px 0 0; font-size: 22px; font-weight: 600; }
+.kpis { display: flex; gap: 8px; }
+.kpis div { background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; min-width: 110px; }
+.kpis b { display: block; font-size: 20px; color: var(--warn); font-variant-numeric: tabular-nums; }
+.kpis span { font-size: 11px; color: var(--muted); }
+main { display: grid; grid-template-columns: 1fr 340px; gap: 12px; padding: 12px 22px; }
+#view { width: 100%; height: 520px; background: radial-gradient(circle at 40% 30%, #22180f, #0b0a09); border: 1px solid var(--line); }
+aside { background: var(--panel); border: 1px solid var(--line); padding: 12px; }
+h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+#fft { width: 100%; height: 120px; background: #0e0c0a; }
+.meter { height: 10px; background: #2a2218; margin: 6px 0 12px; }
+.meter > i { display: block; height: 100%; background: var(--melt); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+td, th { border-bottom: 1px solid var(--line); padding: 5px 4px; text-align: left; }
+.NORMAL { color: var(--ok); } .WATCH { color: var(--warn); } .HOLD, .ESTOP { color: var(--stop); }
+.lower { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 22px 28px; }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 12px; }
+.muted { color: var(--muted); font-size: 12px; }
+button { background: #2a1a10; color: var(--ink); border: 1px solid var(--melt); padding: 4px 10px; cursor: pointer; }

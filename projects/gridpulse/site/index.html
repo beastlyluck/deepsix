@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>GridPulse — network ops</title>
+<link rel="stylesheet" href="theme.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker">GRIDPULSE · REGIONAL MICROGRID · MODEL <span id="sha">—</span></div>
+    <h1>One weak corridor, two schedules, one evening peak</h1>
+  </div>
+  <div class="kpis">
+    <div><b id="k-grid">—</b><span>buses / lines</span></div>
+    <div><b id="k-istar">—</b><span>PINN sustainable current</span></div>
+    <div><b id="k-auc">—</b><span>cascade AUC (graph vs none)</span></div>
+    <div><b id="k-cost">—</b><span>dispatch cost, static → derated</span></div>
+    <div><b id="k-lost">—</b><span>buses lost, static → derated</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="net">
+    <div class="bar">
+      <div class="seg">
+        <button data-s="dyn" class="on">PINN-derated schedule</button>
+        <button data-s="static">static ratings</button>
+      </div>
+      <span id="clock">00:00</span>
+      <input id="scrub" type="range" min="0" max="143" value="0"/>
+      <button id="play">play</button>
+      <span class="legend"><i class="sw ok"></i>&lt;70% <i class="sw warm"></i>70–100% <i class="sw hot"></i>&gt;100% <i class="sw open"></i>open</span>
+    </div>
+    <svg id="graph" viewBox="-4 -4 108 108" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="footnote">Node fill = P(lost service) from the graph model. Edge width = how often that line trips in cascades it did not start.</div>
+  </section>
+  <aside>
+    <h2>Predictive alert drawer <span id="acount"></span></h2>
+    <div id="alerts"></div>
+    <h2>Node inspector</h2>
+    <div id="inspect" class="muted">hover a bus</div>
+  </aside>
+</main>
+
+<section class="lower">
+  <div class="card">
+    <h2>Conductor thermal PINN vs finite difference</h2>
+    <svg id="pinn" viewBox="0 0 440 180"></svg>
+    <table id="ttl"></table>
+    <p class="muted">T(x, t=1 h) along the span at three loadings. Solid = FD reference, dashed = PINN. Sheltered mid-span is the hotspot; 90 °C is the limit.</p>
+  </div>
+  <div class="card">
+    <h2>Graph model ablation</h2>
+    <table id="gnn"></table>
+    <p class="muted">K hops of feature propagation, hop-concatenated, logistic readout. K=0 is the same features with no graph. Split by scenario.</p>
+    <h2>Derated line-hours</h2>
+    <div id="derated" class="muted"></div>
+  </div>
+  <div class="card">
+    <h2>Day-ahead dispatch (derated)</h2>
+    <svg id="disp" viewBox="0 0 440 200"></svg>
+    <p class="muted">Stacked: renewables, battery discharge, import, shed. Line: battery state of charge (right axis). HiGHS LP with PTDF line constraints.</p>
+  </div>
+</section>
+<footer>Stand-in grid. Docs: <a href="../docs/index.html">docs/index.html</a> · Kafka schemas <code>stream/schemas/</code> · Flink SQL <code>stream/features.sql</code></footer>
+<script src="data.js"></script>
+<script src="graph.js"></script>
+<script src="panels.js"></script>
+</body>
+</html>

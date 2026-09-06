@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Exec KPI twin</title>
+<style>
+  body{margin:0;background:#f6f1e8;color:#1c1914;font:16px Georgia,serif}
+  header{padding:28px 32px 8px}
+  .page{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 32px}
+  .k{background:#fff;border:1px solid #cfc4b0;padding:12px}
+  .k.red{border-color:#8b1e1e}
+  .k b{display:block;font-size:26px}
+  select{font:inherit}
+  .main{padding:0 32px 40px}
+</style>
+</head>
+<body>
+<header>
+  <p style="letter-spacing:.14em;font-size:12px">DIRECTOR PAGE · VERSIONED METRICS LAYER</p>
+  <h1>Five numbers. A band. An owner.</h1>
+  <p>Surprise rate <b id="sr">—</b> vs a naive ±2σ band. If the model pages less, the seasonality earned its keep.</p>
+</header>
+<div class="page" id="tiles"></div>
+<div class="main">
+  <label>KPI <select id="k"></select></label>
+  <svg id="g" viewBox="0 0 720 200" width="100%"></svg>
+  <p>Dashed = fit origin (week 78). Red dots = |z| > 2. Definitions live in the semantic layer, not a slide.</p>
+  <p style="opacity:.7">docs/METHOD.md · python main.py</p>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("sr").textContent = C["Surprise rate"] || "run main.py";
+const page = C.page || {};
+const tiles = document.getElementById("tiles");
+const sel = document.getElementById("k");
+Object.entries(page).forEach(([name,v]) => {
+  tiles.innerHTML += `<div class="k ${v.status}"><span>${name}</span><b>${v.value}</b>${v.unit} · ${v.owner} · v${v.definition_version}</div>`;
+  const o=document.createElement("option"); o.value=name; o.textContent=name; sel.appendChild(o);
+});
+function draw(){
+  const name = sel.value;
+  const s = (C.series && C.series[name]) || [];
+  if (!s.length) { document.getElementById("g").innerHTML=""; return; }
+  const ymin=Math.min(...s), ymax=Math.max(...s);
+  const path=s.map((y,i)=>((i?"L":"M")+(20+i*6.7)+","+(180-((y-ymin)/(ymax-ymin||1))*150))).join(" ");
+  document.getElementById("g").innerHTML = '<path d="'+path+'" fill="none" stroke="#1c1914" stroke-width="1.6"/>'
+    +'<line x1="'+(20+78*6.7)+'" x2="'+(20+78*6.7)+'" y1="10" y2="190" stroke="#1c1914" stroke-dasharray="4 3"/>';
+}
+sel.onchange=draw; draw();
+</script>
+</body>
+</html>

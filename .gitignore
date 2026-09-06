@@ -1,0 +1,43 @@
+node_modules/
+dist/
+.vercel/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.shots/
+
+# Local source dumps — the site reads public/models
+/models/
+/new models/
+/logo/*.glb
+
+# Generated / runtime
+projects/**/outputs/
+projects/**/__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Twin boards are copied into public/boards at build time
+public/boards/*
+!public/boards/.gitignore
+
+# Over Vercel/GitHub 100MB file limit — hosted as a GitHub release
+public/models/new/batman.glb
+
+# Unused raw / duplicate model trees
+public/models/_raw/
+public/models/krishna-gltf/
+public/models/goku-ui.glb
+public/models/itachi.glb
+public/models/vegeta.glb
+public/models/spiderman.glb
+
+package.json.bak
+*.zip
+page_turning_#4-1788632235823.mp3
+
+logo/base.obj

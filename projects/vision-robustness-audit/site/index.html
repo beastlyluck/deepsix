@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Vision robustness — when the camera guesses</title>
+<style>
+  body{margin:0;background:#1a0e10;color:#f3d4ce;font:15px/1.4 "Segoe UI",sans-serif}
+  header{padding:24px 28px;border-bottom:4px solid #e24b4b}
+  h1{margin:0;font-size:26px}
+  .grid{display:grid;grid-template-columns:1fr 280px;gap:16px;padding:16px 28px 40px}
+  table{border-collapse:collapse;font-size:12px}
+  td,th{padding:4px 6px;text-align:center}
+  .g{background:#1f6b3a} .a{background:#8a6a12} .r{background:#8b1e1e}
+  select{width:100%}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.16em;font-size:11px;color:#e24b4b">WAREHOUSE CAMERA · IMAGENET-C STAND-IN</div>
+  <h1>Which corruption makes the model guess?</h1>
+  <p>mCE ranks backbones. Traffic lights are a business rule: green ≤10pt drop, amber ≤25, red after. The sentence is the product.</p>
+</header>
+<div class="grid">
+  <div>
+    <label>Backbone <select id="bb"></select></label>
+    <table id="heat"></table>
+    <p id="sent" style="color:#e24b4b"></p>
+  </div>
+  <div>
+    <p>mCE (best) <b id="mce">—</b></p>
+    <p>Clean acc <b id="acc">—</b></p>
+    <p>Rain fail sev. <b id="rain">—</b></p>
+    <table id="rank"></table>
+    <p style="opacity:.7">docs/METHOD.md · <code>python main.py</code> · notebook in notebooks/</p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+const lights = C.traffic_light_best || {};
+const cors = Object.keys(lights).length ? Object.keys(lights) : ["fog","rain","snow","motion_blur","jpeg"];
+const sevs = [1,2,3];
+const audit = C.per_backbone || {};
+const bbs = Object.keys(audit);
+const sel = document.getElementById("bb");
+bbs.forEach(b => { const o=document.createElement("option"); o.value=b; o.textContent=b; sel.appendChild(o); });
+if (C.best_backbone) sel.value = C.best_backbone;
+document.getElementById("mce").textContent = C["mCE (best)"] ?? "run main.py";
+document.getElementById("acc").textContent = (audit[C.best_backbone] && audit[C.best_backbone].clean_acc) || "—";
+document.getElementById("rain").textContent = C["Rain fail sev."] ?? "—";
+document.getElementById("rank").innerHTML = "<tr><th>backbone</th><th>mCE</th></tr>" +
+  Object.entries(audit).map(([k,v]) => `<tr><td>${k}</td><td>${v.mCE}</td></tr>`).join("");
+
+function draw(){
+  let h = "<tr><th></th>" + sevs.map(s => "<th>sev "+s+"</th>").join("") + "</tr>";
+  cors.forEach(c => {
+    h += "<tr><th>"+c+"</th>";
+    sevs.forEach(s => {
+      const lite = (lights[c] && lights[c][s]) || (lights[c] && lights[c][String(s)]) || "amber";
+      const cls = lite === "green" ? "g" : lite === "red" ? "r" : "a";
+      h += `<td class="${cls}">${lite}</td>`;
+    });
+    h += "</tr>";
+  });
+  document.getElementById("heat").innerHTML = h;
+  document.getElementById("sent").textContent = (C.stakeholder_sentences || [])[0] || "Run python main.py to fill sentences.";
+}
+sel.onchange = draw; draw();
+</script>
+</body>
+</html>

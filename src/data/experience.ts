@@ -1,0 +1,47 @@
+﻿export const experience = [
+  {
+    id: 'erth-electric',
+    role: 'Assistant Manager',
+    company: 'ERTH Electric Pvt. Ltd.',
+    location: 'Nashik, India',
+    period: 'June 2023 – March 2024',
+    type: 'full-time',
+    highlights: [
+      'Managed content creation and video editing pipeline for web and social platforms',
+      'Played pivotal role in successful website launch leveraging CS background',
+      'Contributed to mobile application development as project manager',
+      'Developed frontend using HTML/CSS, ensured backend-frontend compatibility',
+      'Created engagement content for website and social media platforms',
+    ],
+    skills: ['HTML', 'CSS', 'JavaScript', 'Project Management', 'Video Editing', 'Premiere Pro', 'Final Cut', 'Mobile App Development'],
+  },
+  {
+    id: 'mylan-labs',
+    role: 'Data Science Project Contributor',
+    company: 'Mylan Laboratories',
+    location: 'Nashik, India',
+    period: 'May 2022 – July 2022',
+    type: 'project',
+    highlights: [
+      'Worked on production line dashboard for manufacturing insights',
+      'Analyzed system efficiency metrics and optimization opportunities',
+      'Collaborated with cross-functional team on data-driven decision making',
+      'Gained practical experience in industrial data science workflows',
+    ],
+    skills: ['Python', 'Pandas', 'Data Visualization', 'Dashboard Development', 'Manufacturing Analytics'],
+  },
+  {
+    id: 'swapnapurti',
+    role: 'Volunteer',
+    company: 'Swapnapurti Foundation',
+    location: 'Nashik, India',
+    period: '2020 – 2024',
+    type: 'volunteer',
+    highlights: [
+      'Participated in river bank cleaning drives post-Ganpati festival',
+      'Conducted technology workshops for students in remote village schools',
+      'Organized community outreach events for underprivileged communities',
+    ],
+    skills: ['Community Leadership', 'Teaching', 'Event Organization', 'Social Impact'],
+  },
+];

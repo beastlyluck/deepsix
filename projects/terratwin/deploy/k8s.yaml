@@ -1,0 +1,38 @@
+# One replica. The loop is the product; the cluster only restarts it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: terratwin-loop
+  labels: { app: terratwin }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: terratwin }
+  template:
+    metadata:
+      labels: { app: terratwin }
+    spec:
+      containers:
+        - name: loop
+          image: terratwin-loop:local
+          resources:
+            requests: { cpu: "250m", memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          volumeMounts:
+            - name: facility
+              mountPath: /app/config
+            - name: weights
+              mountPath: /app/outputs
+      volumes:
+        - name: facility
+          configMap: { name: terratwin-facility }
+        - name: weights
+          persistentVolumeClaim: { claimName: terratwin-weights }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terratwin-facility
+data:
+  facility.toml: |
+    # replaced at apply time from config/facility.toml

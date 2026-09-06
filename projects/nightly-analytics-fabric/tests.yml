@@ -1,0 +1,19 @@
+# dbt-style contracts for the nightly fabric. One test per line so a tiny parser can
+# read it without PyYAML. Supported tests: not_null, unique, accepted_values, range,
+# row_count_min, freshness_hours, relationships.
+version: 2
+tests:
+  - {model: stg_enrolments, column: student_id, test: not_null}
+  - {model: stg_enrolments, column: student_id, test: unique}
+  - {model: stg_enrolments, column: status, test: accepted_values, values: [active, deferred, withdrawn]}
+  - {model: stg_enrolments, column: units_enrolled, test: range, min: 0, max: 8}
+  - {model: stg_enrolments, test: row_count_min, min: 2500}
+  - {model: mart_late_invoices, column: invoice_id, test: not_null}
+  - {model: mart_late_invoices, column: invoice_id, test: unique}
+  - {model: mart_late_invoices, column: days_late, test: range, min: 1, max: 3650}
+  - {model: mart_late_invoices, test: row_count_min, min: 1}
+  - {model: mart_late_invoices, column: supplier, test: relationships, to: raw_suppliers, field: supplier}
+  - {model: mart_energy_intensity, column: building_id, test: unique}
+  - {model: mart_energy_intensity, column: kwh_per_m2, test: range, min: 0, max: 60}
+  - {model: mart_energy_intensity, column: last_reading, test: freshness_hours, max_hours: 48}
+  - {model: mart_energy_intensity, test: row_count_min, min: 12}

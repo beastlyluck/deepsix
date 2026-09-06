@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Pick-face twin</title>
+<style>
+  body{margin:0;background:#c4b48a;color:#2b2416;font:15px/1.4 "Courier New",monospace}
+  .desk{padding:28px;max-width:720px}
+  table{width:100%;border-collapse:collapse;background:#f3efe4}
+  td,th{border:1px solid #8a7a4a;padding:8px;text-align:left}
+</style>
+</head>
+<body>
+<div class="desk">
+  <h1>Run the 2× promo before you hire</h1>
+  <p>Late (− extra packer) <b id="lp">—</b> · late (− overtime) <b id="lo">—</b> · scenarios <b id="n">—</b></p>
+  <table id="t"></table>
+  <p>If late stays high at 10 pickers, it is slotting. If it collapses at 8 with a third packer, it is headcount. docs/METHOD.md</p>
+  <pre>python main.py</pre>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("lp").textContent = C["Late orders -"] || "run main.py";
+document.getElementById("lo").textContent = C["Late orders - (overtime)"] ?? "—";
+document.getElementById("n").textContent = C.Scenarios ?? "—";
+const p = C.promo_week_2x || {};
+document.getElementById("t").innerHTML = "<tr><th>scenario</th><th>late rate</th></tr>" +
+  Object.entries(p).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+</script>
+</body>
+</html>

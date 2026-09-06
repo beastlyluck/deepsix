@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Win-back — mail who changes</title>
+<style>
+  body{margin:0;background:#2a100c;color:#fde7dc;font:16px Georgia,serif}
+  .split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+  .left{padding:40px;background:#d4532b;color:#2a100c}
+  .right{padding:40px}
+</style>
+</head>
+<body>
+<div class="split">
+  <div class="left">
+    <p style="letter-spacing:.16em;font-size:12px">RETENTION · UPLIFT NOT PROPENSITY</p>
+    <h1>Only mail the people the offer moves.</h1>
+    <p>Best model <b id="best">—</b>. AUUC <b id="auuc">—</b>. Budget save <b id="save">—</b>.</p>
+    <p>Qini is stay(treat) − stay(control). The cut is the product. Sleeping dogs have negative uplift — mailing them is a cost.</p>
+    <p>docs/METHOD.md · <code>python main.py</code></p>
+  </div>
+  <div class="right">
+    <label>Mail top deciles <b id="k">3</b></label>
+    <input id="d" type="range" min="1" max="10" value="3" style="width:100%"/>
+    <p>Extra stays / 1,000 mailed: <b id="u"></b></p>
+    <p>Qini at 20% <b id="q20">—</b> · share with +uplift <b id="pos">—</b></p>
+    <svg id="s" viewBox="0 0 520 180" width="100%"></svg>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("best").textContent = C.best_model || "run main.py";
+document.getElementById("auuc").textContent = C.AUUC ?? "—";
+document.getElementById("save").textContent = C["Budget save"] ?? "—";
+document.getElementById("q20").textContent = C["Qini (20%)"] ?? "—";
+document.getElementById("pos").textContent = C.share_with_positive_uplift ?? "—";
+const q = [0,.18,.32,.41,.47,.5,.51,.51,.5,.48];
+const d = document.getElementById("d");
+function draw(){
+  const k = +d.value; document.getElementById("k").textContent = k;
+  document.getElementById("u").textContent = Math.round(q[k-1]*40);
+  const path = q.map((y,i)=>((i?"L":"M")+(20+i*48)+","+(160-y*140))).join(" ");
+  document.getElementById("s").innerHTML = '<path d="'+path+'" fill="none" stroke="#fde7dc" stroke-width="2"/>'
+    +'<circle cx="'+(20+(k-1)*48)+'" cy="'+(160-q[k-1]*140)+'" r="5" fill="#d4532b"/>';
+}
+d.oninput = draw; draw();
+</script>
+</body>
+</html>

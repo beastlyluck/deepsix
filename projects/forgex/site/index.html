@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ForgeX — cell twin</title>
+<link rel="stylesheet" href="theme.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker">FORGEX · SIX-AXIS CELL · LATE FUSION</div>
+    <h1>Score the cycle. Do not let the model reset the hold.</h1>
+  </div>
+  <div class="kpis">
+    <div><b id="auc">—</b><span>AUC all</span></div>
+    <div><b id="us">—</b><span>score µs</span></div>
+    <div><b id="hold">—</b><span>holds</span></div>
+    <div><b id="estop">—</b><span>E-stops</span></div>
+  </div>
+</header>
+<main>
+  <section>
+    <div id="view"></div>
+    <p class="muted">Joint colour is the fusion score on that stored pose. Orange is watch. Red is a hold. Drag to orbit.</p>
+  </section>
+  <aside>
+    <h2>FFT — mesh band</h2>
+    <canvas id="fft" width="300" height="120"></canvas>
+    <h2>Anomaly score <span id="scv">—</span></h2>
+    <div class="meter"><i id="scm" style="width:0"></i></div>
+    <h2>State</h2>
+    <p id="st" class="NORMAL">NORMAL</p>
+    <p class="muted">HOLD needs a human bit. Two holds in five cycles become ESTOP.</p>
+    <button id="prev" type="button">prev pose</button>
+    <button id="next" type="button">next pose</button>
+  </aside>
+</main>
+<section class="lower">
+  <div class="card">
+    <h2>Leave-one-block-out</h2>
+    <table id="ab"></table>
+    <p class="muted">Acoustics catch the bearing. Vision catches the leak. Dropping either is how a “good AUC” still ships a cracked reducer.</p>
+  </div>
+  <div class="card">
+    <h2>Shift strip</h2>
+    <table id="tl"></table>
+  </div>
+</section>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="data.js"></script>
+<script src="arm.js"></script>
+</body>
+</html>

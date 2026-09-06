@@ -1,0 +1,1 @@
+window.CASE = {"Qini (20%)": 0.072, "Budget save": "66%", "AUUC": 0.031, "N": 7043, "best_model": "Class transform", "models": {"T-learner": {"Qini (20%)": 0.063, "AUUC": 0.029}, "Class transform": {"Qini (20%)": 0.072, "AUUC": 0.031}, "Random": {"Qini (20%)": 0.018, "AUUC": -0.003}}, "share_with_positive_uplift": 0.716, "message_everyone_incremental_rate": 0.075};

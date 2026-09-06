@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AeroTwin — swarm ops</title>
+<link rel="stylesheet" href="theme.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker">AEROTWIN · SWARM OPS · POLICY <span id="sha">—</span></div>
+    <h1>Six airframes, one policy, real gusts</h1>
+  </div>
+  <div class="kpis">
+    <div><b id="gap">—</b><span>S2R gap (DR)</span></div>
+    <div><b id="gapn">—</b><span>S2R gap (nominal)</span></div>
+    <div><b id="recall">—</b><span>manual recall@3</span></div>
+    <div><b id="hz">400 Hz</b><span>edge loop</span></div>
+  </div>
+</header>
+<main>
+  <section class="map">
+    <canvas id="gl" width="960" height="560"></canvas>
+    <div class="hud">
+      <span id="clock">t = 0.00 s</span>
+      <button id="play">pause</button>
+      <label>yaw <input id="yaw" type="range" min="-180" max="180" value="35"/></label>
+      <label>speed <input id="spd" type="range" min="1" max="8" value="2"/></label>
+    </div>
+  </section>
+  <aside>
+    <h2>Telemetry</h2>
+    <label>Drone <select id="dsel"></select></label>
+    <div class="tele">
+      <div><span>roll</span><canvas class="spark" id="s0" width="260" height="46"></canvas><b id="v0">—</b></div>
+      <div><span>pitch</span><canvas class="spark" id="s1" width="260" height="46"></canvas><b id="v1">—</b></div>
+      <div><span>yaw</span><canvas class="spark" id="s2" width="260" height="46"></canvas><b id="v2">—</b></div>
+      <div><span>wind</span><canvas class="spark" id="s3" width="260" height="46"></canvas><b id="v3">—</b></div>
+      <div><span>track err</span><canvas class="spark" id="s4" width="260" height="46"></canvas><b id="v4">—</b></div>
+    </div>
+    <h2>Corrective log</h2>
+    <pre id="term"></pre>
+  </aside>
+</main>
+<section class="lower">
+  <div class="card">
+    <h2>Sim-to-real audit</h2>
+    <table id="s2r"></table>
+    <p class="muted">Same architecture, two training worlds. Gap = RMSE(real) − RMSE(sim). Spread across seeds is the honest part.</p>
+  </div>
+  <div class="card">
+    <h2>Training loss</h2>
+    <canvas id="loss" width="440" height="160"></canvas>
+    <p class="muted">Blue = domain randomised. Grey = nominal. Backprop through the sim, Adam, clipped.</p>
+  </div>
+  <div class="card">
+    <h2>Onboard manual query</h2>
+    <input id="q" placeholder="motor running hot what do we do"/>
+    <div id="qa" class="muted"></div>
+    <p class="muted">Offline page shows the recorded sample. Live retrieval: <code>POST /v1/query</code> on the swarm API.</p>
+  </div>
+</section>
+<footer>Stand-in world. Docs: <a href="../docs/index.html">docs/index.html</a> · gRPC contract <code>swarm/swarm.proto</code> · edge <code>edge/controller.cpp</code></footer>
+<script src="data.js"></script>
+<script src="gl.js"></script>
+<script src="ops.js"></script>
+</body>
+</html>

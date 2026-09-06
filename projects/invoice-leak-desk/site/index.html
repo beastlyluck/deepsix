@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Invoice leak desk</title>
+<style>
+  body{margin:0;background:#1b1d18;color:#e8ebd4;font:14px/1.4 "Segoe UI",sans-serif}
+  header{padding:18px 22px;background:#2a2e22;border-bottom:3px solid #c4d36a}
+  table{width:100%;border-collapse:collapse}
+  td,th{border-bottom:1px solid #3a3e32;padding:7px;text-align:left}
+  button{margin-right:6px}
+  .hold{background:#3e2a1a}
+  .ok{background:#1e2e1a}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.14em;font-size:11px;opacity:.7">AP QUEUE · BLOCK + FUZZY REMITTANCE</div>
+  <h1>Duplicate and split payments — hold or release</h1>
+  <p>Precision@20 <b id="p20">—</b> · planted leaks <b id="pl">—</b>. Flask app.py is the live queue. This page is the huddle pack.</p>
+</header>
+<div style="padding:16px 22px">
+  <table id="q"></table>
+  <p style="opacity:.7">Blocking: vendor + rounded amount + date window. Leftover pairs scored with difflib on the remittance line. docs/METHOD.md</p>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("p20").textContent = C.precision_at_20 ?? "run main.py";
+document.getElementById("pl").textContent = C.planted_rows ?? "—";
+const q = C.queue || C.queue_head || [];
+function render(){
+  document.getElementById("q").innerHTML = "<tr><th>pair</th><th>vendor</th><th>score</th><th>why</th><th></th></tr>" +
+    q.map((r,i) => `<tr class="${r.status||""}" data-i="${i}"><td>${r.a} / ${r.b}</td><td>${r.vendor||""}</td><td>${r.score}</td><td>${r.why||r.reason||""}</td>
+      <td><button data-act="hold">hold</button><button data-act="rel">release</button></td></tr>`).join("");
+}
+document.getElementById("q").onclick = e => {
+  const act = e.target.dataset.act; if (!act) return;
+  const i = +e.target.closest("tr").dataset.i;
+  q[i].status = act === "hold" ? "hold" : "ok";
+  render();
+};
+render();
+</script>
+</body>
+</html>

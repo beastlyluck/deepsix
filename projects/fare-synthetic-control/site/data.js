@@ -1,0 +1,1 @@
+window.CASE = {"ATT (boardings)": "-7.7%", "Placebo p": 0.053, "Donors": 18, "Pre-fit": "RMSPE 0.032", "post_pre_rmspe_ratio": 2.71, "top_donor_weights": {"route_5": 0.251, "route_13": 0.136, "route_10": 0.13, "route_16": 0.122, "route_15": 0.08}, "true_effect_used_in_simulation": "-6.4%"};

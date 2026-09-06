@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Faculty collab map</title>
+<style>
+  body{margin:0;background:#e8eef5;color:#122033;font:15px Georgia,serif}
+  header{padding:24px 28px;background:#122033;color:#e8eef5}
+  .wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 28px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{border-bottom:1px solid #c5d0dc;padding:5px;text-align:left}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.14em;font-size:11px">BIPARTITE PROJECTION · MODULARITY</div>
+  <h1>Who writes with whom — and who is the only bridge</h1>
+  <p>Labs that never co-author are isolated. Bridge authors are the ones a dean should not let leave.</p>
+</header>
+<div class="wrap">
+  <div>
+    <p>Modularity <b id="mod">—</b> · communities <b id="com">—</b> · authors <b id="na">—</b></p>
+    <h3>Bridge ranking</h3>
+    <table id="br"></table>
+  </div>
+  <div>
+    <h3>Community sizes</h3>
+    <table id="sz"></table>
+    <p>If modularity is near zero, the “labs” are a slide. Isolated communities with no bridge are the hiring risk.</p>
+    <p>docs/METHOD.md · python main.py</p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("mod").textContent = C.Modularity ?? "run main.py";
+document.getElementById("com").textContent = C.Communities ?? "—";
+document.getElementById("na").textContent = C.Authors ?? "—";
+document.getElementById("br").innerHTML = "<tr><th>author</th><th>labs touched</th><th>participation</th></tr>" +
+  (C.top_bridges || []).map(b => `<tr><td>${b.author}</td><td>${b.communities}</td><td>${b.participation}</td></tr>`).join("");
+const sizes = C.community_sizes || [];
+document.getElementById("sz").innerHTML = "<tr><th>community</th><th>n</th></tr>" +
+  sizes.map((v,i) => `<tr><td>${i}</td><td>${v}</td></tr>`).join("");
+</script>
+</body>
+</html>

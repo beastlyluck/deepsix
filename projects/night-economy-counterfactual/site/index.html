@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Night economy — tram cut DiD</title>
+<style>
+  body{margin:0;background:#0d0a12;color:#f4e6c4;font:16px/1.5 Georgia,serif}
+  .hero{padding:40px 8vw 16px;background:linear-gradient(#1a1220,#0d0a12)}
+  h1{font-size:40px;max-width:16ch;margin:0}
+  nav{padding:8px 8vw;display:flex;gap:8px}
+  nav button{background:#1a1220;color:#f4e6c4;border:1px solid #3a2f22;padding:6px 12px;cursor:pointer}
+  nav button.on{background:#e8a317;color:#0d0a12}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:12px 8vw 64px}
+  .gold{color:#e8a317}
+  input,select{width:100%;accent-color:#e8a317}
+  table{width:100%;font-size:14px;border-collapse:collapse}
+  td,th{border-bottom:1px solid #3a2f22;padding:6px 0;text-align:left}
+  .hidden{display:none}
+  .kpi{font-size:28px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="gold" style="letter-spacing:.2em;font-size:12px">MELBOURNE CBD FRINGE · COUNTERFACTUAL · SEED 11</div>
+  <h1>If the after-11 tram thins out, what happens to the till?</h1>
+  <p>Treated strip loses frequency. Control keeps it. Event study first. Headline second. docs/METHOD.md</p>
+</div>
+<nav>
+  <button class="on" data-tab="brief">Brief</button>
+  <button data-tab="es">Event study</button>
+  <button data-tab="map">Residual map</button>
+</nav>
+<div id="brief" class="cols">
+  <div>
+    <p>DiD spend <span class="kpi gold" id="did">—</span></p>
+    <p>90% CI <b id="ci">—</b> · control R² <b id="r2">—</b> · parallel <b id="par">—</b></p>
+    <label>Trams / hour after 23:00 <b id="tv">4</b>
+      <input id="t" type="range" min="2" max="8" value="4"/></label>
+    <p>What-if spend vs 6 trams/h: <b class="gold" id="what"></b></p>
+    <svg id="g" viewBox="0 0 560 200" width="100%"></svg>
+    <p style="opacity:.7;font-size:13px">Gold = treated. Dashed = matched control. Vertical = cut day 120.</p>
+  </div>
+  <div>
+    <h2>Match distances</h2>
+    <table id="dist"></table>
+    <p>If pre-period slopes disagree, stop. We do not publish an effect from a bad twin.</p>
+    <p>Reproduce: <code>python main.py</code></p>
+  </div>
+</div>
+<div id="es" class="cols hidden">
+  <div>
+    <h2>Weekly leads / lags (week −1 omitted)</h2>
+    <svg id="esg" viewBox="0 0 560 200" width="100%"></svg>
+    <p>Pre-weeks should sit on zero. If they wander, the ATT is not a brief.</p>
+  </div>
+  <div>
+    <table id="est"></table>
+  </div>
+</div>
+<div id="map" class="cols hidden">
+  <div>
+    <h2>Post residual by sensor</h2>
+    <table id="res"></table>
+  </div>
+  <div>
+    <p>Red sensors are unexplained. Do not smooth them into the headline. They are the map.</p>
+    <p>Unexplained: <b id="red">—</b></p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("did").textContent = C["DiD spend"] || "run main.py";
+document.getElementById("ci").textContent = (C["DiD 90% CI"] || []).join(" to ");
+document.getElementById("r2").textContent = C["R2 (control)"] ?? "—";
+document.getElementById("par").textContent = C.parallel_trends_ok ? "OK" : "CHECK";
+document.getElementById("red").textContent = (C.unexplained_sensors || []).join(", ") || "—";
+document.getElementById("dist").innerHTML = "<tr><th>precinct</th><th>shape distance</th></tr>" +
+  Object.entries(C.match_distance || {}).map(([k,v]) => `<tr><td>${k}${k==C.matched_control_precinct?" ★":""}</td><td>${v}</td></tr>`).join("");
+document.getElementById("est").innerHTML = "<tr><th>week</th><th>coef</th></tr>" +
+  Object.entries(C.event_study || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+document.getElementById("res").innerHTML = "<tr><th>sensor</th><th>residual</th></tr>" +
+  Object.entries(C.residuals || {}).map(([k,v]) => {
+    const hot = (C.unexplained_sensors || []).includes(+k);
+    return `<tr><td>S-${k}</td><td class="${hot?"gold":""}">${v}${hot?" unexplained":""}</td></tr>`;
+  }).join("");
+
+document.querySelectorAll("nav button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    ["brief","es","map"].forEach(id => document.getElementById(id).classList.toggle("hidden", id !== b.dataset.tab));
+  };
+});
+
+function path(ys, ymin, ymax){
+  return ys.map((y,i) => ((i?"L":"M")+(20+i*(520/Math.max(ys.length-1,1)))+","+(180-((y-ymin)/(ymax-ymin||1))*150))).join(" ");
+}
+function drawSeries(){
+  const t = +document.getElementById("t").value;
+  document.getElementById("tv").textContent = t;
+  const sim = (C.simulator && C.simulator[t]) ? C.simulator[t].spend : "";
+  document.getElementById("what").textContent = sim || "—";
+  const x = C.treated || [], c = C.control || [];
+  if (!x.length) return;
+  const ymin = Math.min(...x,...c), ymax = Math.max(...x,...c);
+  const cut = C.cut_day || 120;
+  const cx = 20 + (cut/(x.length-1))*520;
+  document.getElementById("g").innerHTML =
+    '<path d="'+path(x,ymin,ymax)+'" fill="none" stroke="#e8a317" stroke-width="2"/>' +
+    '<path d="'+path(c,ymin,ymax)+'" fill="none" stroke="#f4e6c4" stroke-dasharray="5 4"/>' +
+    '<line x1="'+cx+'" x2="'+cx+'" y1="10" y2="190" stroke="#f4e6c4" opacity=".5"/>';
+}
+function drawES(){
+  const es = C.event_study || {};
+  const keys = Object.keys(es).map(Number).sort((a,b)=>a-b);
+  const vals = keys.map(k => es[k]);
+  if (!keys.length) return;
+  const ymin = Math.min(...vals,-0.05), ymax = Math.max(...vals,0.05);
+  document.getElementById("esg").innerHTML =
+    '<line x1="20" x2="540" y1="'+(180-((0-ymin)/(ymax-ymin))*150)+'" y2="'+(180-((0-ymin)/(ymax-ymin))*150)+'" stroke="#f4e6c4" opacity=".4"/>' +
+    '<path d="'+path(vals,ymin,ymax)+'" fill="none" stroke="#e8a317" stroke-width="2"/>';
+}
+document.getElementById("t").oninput = drawSeries;
+drawSeries(); drawES();
+</script>
+</body>
+</html>

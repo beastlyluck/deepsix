@@ -1,0 +1,1 @@
+window.CASE = {"Late orders -": "98%", "Late orders - (overtime)": "23%", "Scenarios": 48, "Util. pack": "72% (with 3rd packer; baseline 95%)", "Runtime": "0.1s", "promo_week_2x": {"baseline_5p_2k_8h": 0.236, "extra_packer_5p_3k_8h": 0.005, "overtime_5p_2k_10h": 0.183}, "mean_wait_min_baseline": 0.4};

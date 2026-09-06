@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Manuscript intel — unit reading desk</title>
+<style>
+  body{margin:0;background:#efe6cf;color:#2b2116;font:16px/1.45 Palatino,Georgia,serif}
+  header{padding:36px 8vw 8px;border-bottom:4px double #2b2116}
+  h1{font-size:34px;margin:0}
+  .shelf{padding:20px 8vw}
+  table{width:100%;border-collapse:collapse;background:#fffaf0}
+  th,td{text-align:left;border-bottom:1px solid #d8cbb0;padding:8px}
+  .colophon{padding:24px 8vw 48px;max-width:70ch}
+</style>
+</head>
+<body>
+<header>
+  <p style="letter-spacing:.18em;font-size:12px">FIT5145 / FIT5201 READING LIST</p>
+  <h1>Ledger of claims, intervals, and datasets</h1>
+  <p>Claim F1 <b id="f1">—</b> · dataset recall <b id="rec">—</b> · query <b id="lat">—</b> · papers <b id="n">—</b></p>
+</header>
+<div class="shelf">
+  <h2>Ontology hits</h2>
+  <table id="ds"></table>
+  <h2>Methods with CI + code</h2>
+  <table id="ci"></table>
+</div>
+<div class="colophon">
+  <p>Abstract → TF-IDF + logistic “is this a claim?” → ontology for dataset names → SQLite. Unseen names are recall misses on purpose. docs/METHOD.md</p>
+  <pre>python main.py</pre>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("f1").textContent = C["Claim F1"] ?? "run main.py";
+document.getElementById("rec").textContent = C["Dataset recall"] ?? "—";
+document.getElementById("lat").textContent = C["Query latency"] ?? "—";
+document.getElementById("n").textContent = C.Papers ?? "—";
+document.getElementById("ds").innerHTML = "<tr><th>dataset</th><th>papers</th></tr>" +
+  Object.entries(C.dataset_counts || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+document.getElementById("ci").innerHTML = "<tr><th>method</th><th>papers</th></tr>" +
+  Object.entries(C.papers_with_ci_and_code_by_method || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+</script>
+</body>
+</html>

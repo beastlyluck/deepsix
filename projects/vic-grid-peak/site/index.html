@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>VIC1 peak desk</title>
+<style>
+  body{margin:0;background:#0b1220;color:#d7e6ff;font:14px/1.4 Consolas,monospace}
+  header{padding:18px 22px;background:#12203a;border-bottom:3px solid #5b8def}
+  .wrap{display:grid;grid-template-columns:1fr 300px;gap:12px;padding:12px 22px 28px}
+  table{width:100%;border-collapse:collapse}
+  td,th{border-bottom:1px solid #243454;padding:6px;text-align:left}
+  .hot{color:#ffb020}
+</style>
+</head>
+<body>
+<header>
+  <div style="letter-spacing:.14em;font-size:11px;opacity:.7">AEMO VIC1 STAND-IN · q90 DEMAND</div>
+  <h1>Named spikes, not a heatmap</h1>
+  <p>q90 MAPE <b id="mape">—</b> · spikes <b id="ns">—</b>. The desk points at three intervals. FastAPI app.py is the live desk.</p>
+</header>
+<div class="wrap">
+  <div>
+    <svg id="g" viewBox="0 0 720 220" width="100%"></svg>
+    <p style="opacity:.6">White = demand. Blue = q90. Gold ticks = named spikes.</p>
+  </div>
+  <div>
+    <h3>Event log</h3>
+    <table id="ev"></table>
+    <p>Heat bump on the last four days. Unit trip day 18 ~17:30 is supposed to be in the log.</p>
+    <p style="opacity:.6">docs/METHOD.md · python main.py · uvicorn app:app</p>
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("mape").textContent = C.q90_mape ?? C["q90 MAPE"] ?? "run main.py";
+document.getElementById("ns").textContent = (C.events || []).length || C.spikes || "—";
+const dem = C.demand || [];
+const q90 = C.q90 || [];
+const ev = C.events || [];
+if (dem.length){
+  const mx = Math.max(...dem, ...q90);
+  const p = ys => ys.map((y,i)=>((i?"L":"M")+(20+i*(680/Math.max(ys.length-1,1)))+","+(200-(y/mx)*170))).join(" ");
+  let svg = '<path d="'+p(dem)+'" fill="none" stroke="#d7e6ff" stroke-width="1.2"/>'
+    + '<path d="'+p(q90)+'" fill="none" stroke="#5b8def" stroke-dasharray="4 3"/>';
+  ev.forEach(e => {
+    const i = e.step ?? e.t ?? 0;
+    const x = 20+i*(680/Math.max(dem.length-1,1));
+    svg += '<line x1="'+x+'" x2="'+x+'" y1="16" y2="200" stroke="#ffb020" opacity=".7"/>';
+  });
+  document.getElementById("g").innerHTML = svg;
+}
+document.getElementById("ev").innerHTML = "<tr><th>when</th><th>why</th></tr>" +
+  ev.map(e => `<tr class="hot"><td>${e.when || e.label || e.step}</td><td>${e.reason || e.name || ""}</td></tr>`).join("");
+</script>
+</body>
+</html>

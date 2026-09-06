@@ -1,0 +1,34 @@
+[site]
+name = "Clyde North vertical 2"
+towers = 8
+layers = 10
+trays_per_layer = 4
+dt_min = 15
+
+[setpoints]
+temp_c = 22.0
+rh = 0.68
+ec_ms = 1.8
+ppfd = 220.0
+
+[limits]
+temp_c = [18.0, 28.0]
+rh = [0.50, 0.85]
+ec_ms = [1.2, 2.6]
+ppfd = [80.0, 340.0]
+
+[energy]
+kwh_per_ppfd_hour = 0.0042
+kwh_per_mist = 0.08
+tariff_aud = 0.22
+
+[disease]
+beta = 0.18
+gamma = 0.06
+neighbor_weight = 0.35
+
+[reward]
+yield_w = 1.0
+energy_w = 0.35
+disease_w = 2.2
+limit_w = 4.0

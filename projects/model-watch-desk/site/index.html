@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Model watch desk</title>
+<style>
+  body{margin:0;background:#0b0d0e;color:#cfd5d1;font:13px/1.4 ui-monospace,monospace}
+  header{padding:14px 18px;border-bottom:1px solid #2a3030}
+  .ok{color:#7cbf6a}.warn{color:#e0b44a}.bad{color:#e05a4a}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:8px 10px;border-bottom:1px solid #222;text-align:left}
+  .strip{display:flex;gap:4px;padding:8px 0}
+  .d{width:18px;height:18px}
+  select{background:#111;color:#cfd5d1}
+</style>
+</head>
+<body>
+<header>
+  <div>PROD · three models · 14 daily windows · label delay 1d</div>
+  <h1 style="margin:6px 0 0;font-size:18px">Watch desk — page rarely or people mute you</h1>
+  <p>Detect delay <b id="dd">—</b> · false pages <b id="fp">—</b></p>
+</header>
+<table id="board"></table>
+<div style="padding:12px 18px 24px">
+  <label>Windows <select id="m"></select></label>
+  <div class="strip" id="s"></div>
+  <p>credit_limit drifts from day 8. churn_watch is label-only death from day 10. PSI can stay polite while AUC dies. docs/METHOD.md</p>
+</div>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("dd").textContent = C["Detect delay"] || "run main.py";
+document.getElementById("fp").textContent = C["False pages"] ?? "—";
+const board = C.board || {};
+const ledger = C.champion_ledger || {};
+const names = Object.keys(board);
+document.getElementById("board").innerHTML = "<tr><th>model</th><th>ref AUC</th><th>PSI max</th><th>AUC</th><th>light</th><th>sha</th></tr>" +
+  names.map(n => {
+    const last = board[n][board[n].length-1] || {};
+    const led = ledger[n] || {};
+    const cls = last.status==="red"?"bad": last.status==="amber"?"warn":"ok";
+    return `<tr><td>${n}</td><td>${led.ref_auc??""}</td><td>${last.psi_max??""}</td><td>${last.auc??""}</td><td class="${cls}">${last.status||""}</td><td>${led.champion_sha||""}</td></tr>`;
+  }).join("");
+const sel = document.getElementById("m");
+names.forEach(n => { const o=document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o); });
+function strip(){
+  const rows = board[sel.value] || [];
+  document.getElementById("s").innerHTML = rows.map(r => {
+    const c = r.status==="red"?"#e05a4a": r.status==="amber"?"#e0b44a":"#7cbf6a";
+    return `<div class="d" style="background:${c}" title="d${r.day} PSI ${r.psi_max}"></div>`;
+  }).join("");
+}
+sel.onchange = strip; strip();
+</script>
+</body>
+</html>

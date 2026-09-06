@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Ward Twin — midnight census desk</title>
+<style>
+  :root { --ink:#142422; --teal:#0c3b38; --paper:#f4f8f7; --line:#b7c7c4; --hot:#8b1e1e; }
+  body { margin:0; background:#dfe8e6; color:var(--ink); font:14px/1.45 "Segoe UI",sans-serif; }
+  header { background:var(--teal); color:#e8f4f2; padding:18px 24px; display:flex; justify-content:space-between; gap:16px; }
+  h1 { margin:0; font-size:20px; font-weight:600; }
+  .sub { opacity:.8; font-size:12px; }
+  nav { display:flex; gap:8px; padding:10px 24px 0; }
+  nav button { border:1px solid var(--line); background:#fff; padding:6px 12px; cursor:pointer; }
+  nav button.on { background:var(--teal); color:#fff; border-color:var(--teal); }
+  .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:12px 24px; }
+  .kpi { background:#fff; border:1px solid var(--line); padding:10px 12px; }
+  .kpi b { display:block; font-size:22px; }
+  .kpi span { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#3d5552; }
+  .kpi.hot b { color:var(--hot); }
+  .wrap { display:grid; grid-template-columns:1fr 320px; gap:12px; padding:0 24px 28px; }
+  .card { background:#fff; border:1px solid var(--line); padding:12px 14px; margin-bottom:12px; }
+  h2 { margin:0 0 8px; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--teal); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { border-bottom:1px solid #c5d2d0; padding:5px 4px; text-align:left; }
+  tr.hot { background:#f8e6e6; }
+  label { display:block; margin:8px 0 4px; font-size:13px; }
+  select,input[type=range] { width:100%; }
+  .hidden { display:none; }
+  pre { background:#142422; color:#d7ebe8; padding:10px; font-size:12px; overflow:auto; }
+  footer { padding:8px 24px 24px; font-size:12px; color:#3d5552; }
+  .cell { display:inline-block; width:18px; height:18px; margin:1px; font-size:9px; text-align:center; line-height:18px; color:#fff; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="sub">Peninsula Health stand-in · seed 7 · not an extract</div>
+    <h1>Ward Twin — hourly occupancy without a named patient</h1>
+  </div>
+  <div class="sub">280 beds · 6 wards · 90-day fit / 14-day holdout<br>docs/METHOD.md · docs/DATA.md · docs/OPERATIONS.md</div>
+</header>
+<nav>
+  <button class="on" data-tab="board">Board</button>
+  <button data-tab="privacy">Privacy table</button>
+  <button data-tab="cal">Calibration</button>
+  <button data-tab="docs">How it works</button>
+</nav>
+<div class="kpis">
+  <div class="kpi"><b id="mae">—</b><span>MAE beds</span></div>
+  <div class="kpi"><b id="cov">—</b><span>80% coverage</span></div>
+  <div class="kpi"><b id="k">—</b><span>re-id floor</span></div>
+  <div class="kpi" id="gatekpi"><b id="gate">—</b><span>gates open</span></div>
+  <div class="kpi"><b id="alpha">—</b><span>NB2 α</span></div>
+</div>
+
+<section id="board">
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>Holdout — ward selector</h2>
+      <label>Ward <select id="w"></select></label>
+      <label>Arrival pressure <span id="av">1.00×</span>
+        <input id="a" type="range" min="0.85" max="1.25" step="0.01" value="1"/></label>
+      <svg id="g" viewBox="0 0 720 220" width="100%"></svg>
+      <p class="sub">Teal = twin mean. Black = census. Band = 80% NB interval. Slider scales the mean only — it is a what-if, not a re-fit.</p>
+    </div>
+    <div class="card">
+      <h2>Ward scorecard (holdout)</h2>
+      <table id="score"></table>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>Night log</h2>
+      <table id="log"></table>
+    </div>
+    <div class="card">
+      <h2>Gate rule</h2>
+      <p>If midnight census sits outside the band two nights running, the ward is flagged. Do not shrink the band at the table. Ask whether the ward changed.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="privacy" class="hidden">
+<div class="wrap">
+  <div class="card">
+    <h2>k-anonymity cells (ward × age × sex)</h2>
+    <p>Grey cells were suppressed (n &lt; 10). The forecast never needed them.</p>
+    <div id="heat"></div>
+    <p class="sub" id="sup"></p>
+  </div>
+  <div class="card">
+    <h2>Dictionary</h2>
+    <table>
+      <tr><th>field</th><th>grain</th></tr>
+      <tr><td>ward</td><td>A–F</td></tr>
+      <tr><td>age_band</td><td>18-39 / 40-59 / 60-74 / 75+</td></tr>
+      <tr><td>sex</td><td>F / M</td></tr>
+      <tr><td>los_days</td><td>kept only if cell survives</td></tr>
+    </table>
+  </div>
+</div>
+</section>
+
+<section id="cal" class="hidden">
+<div class="wrap">
+  <div class="card">
+    <h2>PIT histogram (holdout)</h2>
+    <p>Uniform if the NB interval is honest. Pile-up at the ends means the band is too tight.</p>
+    <svg id="pit" viewBox="0 0 520 180" width="100%"></svg>
+  </div>
+  <div class="card">
+    <h2>Limitations</h2>
+    <p>No ICU step-down, no theatre list, no ambulance offload. Coverage is the honesty check; MAE is the scoreboard. If coverage collapses, the twin is no longer a product.</p>
+  </div>
+</div>
+</section>
+
+<section id="docs" class="hidden">
+<div class="wrap">
+  <div class="card">
+    <h2>Reproduce</h2>
+    <pre>cd projects/ward-twin-synthetic
+pip install -r ../requirements.txt
+python main.py
+# then reopen this file</pre>
+    <p>Notebook <code>notebooks/ward_census.ipynb</code> walks the IRLS step.</p>
+  </div>
+  <div class="card">
+    <h2>Read next</h2>
+    <p><b>docs/DATA.md</b> — fields, grain, what is missing.</p>
+    <p><b>docs/METHOD.md</b> — IRLS, NB2 α, PIT, gate.</p>
+    <p><b>docs/OPERATIONS.md</b> — 07:15 bed meeting ritual and failure modes.</p>
+  </div>
+</div>
+</section>
+<footer>Stand-in shaped like MIMIC-IV hourly occupancy. Not for clinical use. Last run writes site/data.js.</footer>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+const names = C.wards || ["A medical","B surgical","C short-stay","D paeds","E rehab","F overflow"];
+if (C.mae != null) document.getElementById("mae").textContent = C.mae;
+if (C.cov) document.getElementById("cov").textContent = C.cov;
+if (C.k) document.getElementById("k").textContent = C.k;
+if (C.gates != null) {
+  document.getElementById("gate").textContent = C.gates;
+  if (C.gates > 0) document.getElementById("gatekpi").classList.add("hot");
+}
+if (C.alpha != null) document.getElementById("alpha").textContent = C.alpha;
+
+const sel = document.getElementById("w");
+names.forEach((n,i) => { const o=document.createElement("option"); o.value=i; o.textContent=n; sel.appendChild(o); });
+
+document.querySelectorAll("nav button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    ["board","privacy","cal","docs"].forEach(id => {
+      document.getElementById(id).classList.toggle("hidden", id !== b.dataset.tab);
+    });
+  };
+});
+
+function path(xs, ys, x0, xw, y0, yh, ymin, ymax){
+  return ys.map((y,i) => {
+    const x = x0 + i * xw;
+    const yy = y0 - ((y - ymin) / (ymax - ymin)) * yh;
+    return (i ? "L" : "M") + x + "," + yy;
+  }).join(" ");
+}
+
+function drawChart(){
+  const mul = +document.getElementById("a").value;
+  document.getElementById("av").textContent = mul.toFixed(2) + "×";
+  const wi = +sel.value;
+  const s = (C.series && C.series[wi]) || null;
+  let beds, pred, lo, hi;
+  if (s) {
+    pred = s.pred.map(v => v * (0.72 + 0.28 * mul));
+    lo = s.lo.map((v,i) => v - (s.pred[i] - pred[i]));
+    hi = s.hi.map((v,i) => v - (s.pred[i] - pred[i]));
+    beds = s.beds;
+  } else {
+    beds=[]; pred=[]; lo=[]; hi=[];
+    for (let i=0;i<72;i++){
+      const h=i%24, base=30+wi*3+8*Math.sin((h-8)*Math.PI/12);
+      const p=base*(0.72+0.28*mul);
+      pred.push(p); lo.push(p-6.5); hi.push(p+6.5); beds.push(base+(i>48?3:0));
+    }
+  }
+  const ymin = Math.min(...lo, ...beds) - 2;
+  const ymax = Math.max(...hi, ...beds) + 2;
+  const n = pred.length;
+  const xw = 680 / Math.max(n-1,1);
+  const pHi = path(null, hi, 24, xw, 200, 170, ymin, ymax);
+  const pLo = path(null, lo, 24, xw, 200, 170, ymin, ymax);
+  document.getElementById("g").innerHTML =
+    '<path d="'+pHi+' '+pLo.split(/ (?=[ML])/).reverse().join(" ").replace("M","L")+'" fill="#0c3b38" opacity=".12"/>' +
+    '<path d="'+path(null,pred,24,xw,200,170,ymin,ymax)+'" fill="none" stroke="#0c3b38" stroke-width="2"/>' +
+    '<path d="'+path(null,beds,24,xw,200,170,ymin,ymax)+'" fill="none" stroke="#142422" stroke-width="1.2"/>';
+
+  const nights = (C.nights || []).filter(r => r.ward === wi).slice(0, 8);
+  let rows = "<tr><th>day</th><th>census</th><th>band</th><th>miss</th></tr>";
+  if (nights.length) {
+    nights.forEach(r => {
+      rows += `<tr class="${r.miss?"hot":""}"><td>${r.day}</td><td>${r.beds}</td><td>${r.lo}–${r.hi}</td><td>${r.miss?"YES":"no"}</td></tr>`;
+    });
+  } else {
+    for (let n=0;n<3;n++){
+      const i=n*24, miss=beds[i]<lo[i]||beds[i]>hi[i];
+      rows += `<tr><td>${n+1}</td><td>${beds[i].toFixed(1)}</td><td>${lo[i].toFixed(0)}–${hi[i].toFixed(0)}</td><td>${miss?"YES":"no"}</td></tr>`;
+    }
+  }
+  document.getElementById("log").innerHTML = rows;
+}
+
+function scorecard(){
+  const rows = C.scorecard || [];
+  let h = "<tr><th>ward</th><th>MAE</th><th>cover</th><th>mean</th><th>band</th><th>gate</th></tr>";
+  rows.forEach(r => {
+    const g = C.flags && C.flags[r.ward_name];
+    h += `<tr class="${g?"hot":""}"><td>${r.ward_name}</td><td>${r.mae}</td><td>${(r.coverage80*100).toFixed(0)}%</td><td>${r.mean_beds}</td><td>${r.mean_band}</td><td>${g?"OPEN":"quiet"}</td></tr>`;
+  });
+  document.getElementById("score").innerHTML = h || "<tr><td>Run python main.py to fill this table.</td></tr>";
+}
+
+function heat(){
+  const cells = C.cells || [];
+  const ages = ["18-39","40-59","60-74","75+"];
+  const sexes = ["F","M"];
+  let html = "";
+  names.forEach((name, wi) => {
+    html += "<div style='margin:8px 0 4px'><b>"+name+"</b></div>";
+    ages.forEach(a => {
+      sexes.forEach(s => {
+        const c = cells.find(x => x.ward===wi && x.age_band===a && x.sex===s);
+        const n = c ? c.n : 0;
+        const keep = c ? c.kept : false;
+        html += `<span class="cell" title="${a} ${s} n=${n}" style="background:${keep?"#0c3b38":"#8a8a8a"}">${n||""}</span>`;
+      });
+    });
+  });
+  document.getElementById("heat").innerHTML = html || "Run python main.py";
+  document.getElementById("sup").textContent = (C.suppressed!=null) ? (C.suppressed+" rows suppressed") : "";
+}
+
+function pit(){
+  const h = C.pit || [4,5,6,7,8,7,6,5,4,3];
+  const mx = Math.max(...h,1);
+  let bars = "";
+  h.forEach((v,i) => {
+    const ht = (v/mx)*140;
+    bars += `<rect x="${20+i*48}" y="${160-ht}" width="36" height="${ht}" fill="#0c3b38"/>`;
+  });
+  document.getElementById("pit").innerHTML = bars + '<line x1="16" x2="500" y1="160" y2="160" stroke="#142422"/>';
+}
+
+sel.onchange = drawChart;
+document.getElementById("a").oninput = drawChart;
+drawChart(); scorecard(); heat(); pit();
+</script>
+</body>
+</html>

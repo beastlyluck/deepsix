@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "LineFlow",
+  "namespace": "gridpulse.v1",
+  "doc": "Per-line flow and thermal state. Topic: grid.line.flow, keyed by line_id, 1 Hz.",
+  "fields": [
+    {"name": "line_id", "type": "int"},
+    {"name": "ts_ms", "type": "long", "logicalType": "timestamp-millis"},
+    {"name": "from_bus", "type": "int"},
+    {"name": "to_bus", "type": "int"},
+    {"name": "flow_mw", "type": "double"},
+    {"name": "limit_static_mw", "type": "double"},
+    {"name": "limit_dynamic_mw", "type": "double", "doc": "PINN-derived rating for the coming hour"},
+    {"name": "conductor_hotspot_c", "type": ["null", "double"], "default": null},
+    {"name": "status", "type": {"type": "enum", "name": "LineStatus", "symbols": ["CLOSED", "OPEN", "TRIPPED"]}}
+  ]
+}

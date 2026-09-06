@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Rent pressure — Melbourne SA2 stand-in</title>
+<style>
+  body{margin:0;background:#f4efe6;color:#1a1a1a;font:16px Georgia,serif}
+  header{padding:28px 36px 8px}
+  h1{margin:0}
+  main{padding:0 36px 48px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}
+  th,td{padding:7px 6px;border-bottom:1px solid #ddd;text-align:left}
+  select{font:inherit}
+</style>
+</head>
+<body>
+<header>
+  <p style="letter-spacing:.14em;font-size:12px">HEDONIC LOG-RENT · 30% STRESS · SPATIAL LAG</p>
+  <h1>Which SA2s are in rental stress this quarter?</h1>
+  <p>Stress &gt; 1 means median rent eats more than 30% of household income. Residuals the hedonic cannot explain are the precinct, not a listing typo.</p>
+  <p>log RMSE <b id="rmse">—</b> · spatial lag r <b id="lag">—</b> · share stressed <b id="sh">—</b></p>
+</header>
+<main>
+  <div>
+    <label>Ring <select id="ring"><option value="">all</option><option>inner</option><option>middle</option><option>outer</option></select></label>
+    <svg id="g" viewBox="0 0 640 380" width="100%" style="background:#fff;border:1px solid #ccc"></svg>
+  </div>
+  <div>
+    <table id="t"></table>
+    <p style="opacity:.7">Footscray, Dandenong and St Kilda are meant to light up. docs/METHOD.md · python main.py</p>
+  </div>
+</main>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("rmse").textContent = C.log_rmse ?? "run main.py";
+document.getElementById("lag").textContent = C.spatial_lag_r ?? "—";
+document.getElementById("sh").textContent = C.share_stressed ?? "—";
+const rows = C.sa2 || [];
+function draw(){
+  const ring = document.getElementById("ring").value;
+  const data = rows.filter(r => !ring || r.ring === ring).sort((a,b)=>b.stress-a.stress);
+  const mx = Math.max(...data.map(r=>r.stress), 1);
+  document.getElementById("g").innerHTML = data.map((r,i) => {
+    const y = 8+i*18, bw = 480*(r.stress/mx);
+    const fill = r.stress>=1.15?"#b71c1c": r.stress>=1?"#b26a00":"#1b5e20";
+    return `<rect x="150" y="${y}" width="${bw}" height="14" fill="${fill}"/>
+      <text x="8" y="${y+11}" font-size="11">${r.sa2}</text>
+      <text x="${158+bw}" y="${y+11}" font-size="10">${r.stress.toFixed(2)}</text>`;
+  }).join("");
+  document.getElementById("t").innerHTML = "<tr><th>SA2</th><th>ring</th><th>rent</th><th>stress</th><th>resid</th></tr>" +
+    data.map(r => `<tr><td>${r.sa2}</td><td>${r.ring}</td><td>$${Math.round(r.rent_wk)}</td><td>${r.stress.toFixed(2)}</td><td>${r.residual>=0?"+":""}${Math.round(r.residual)}</td></tr>`).join("");
+}
+document.getElementById("ring").onchange = draw; draw();
+</script>
+</body>
+</html>

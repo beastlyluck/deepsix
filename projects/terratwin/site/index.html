@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TerraTwin — Clyde North vertical 2</title>
+<link rel="stylesheet" href="theme.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker">TERRATWIN · VERTICAL 2 · TOML SETPOINTS</div>
+    <h1>Keep the first tray from seeding the tower</h1>
+  </div>
+  <div class="kpis">
+    <div><b id="fy">—</b><span>FQI yield</span></div>
+    <div><b id="py">—</b><span>PID yield</span></div>
+    <div><b id="fi">—</b><span>FQI infected end</span></div>
+    <div><b id="pi">—</b><span>PID infected end</span></div>
+  </div>
+</header>
+<main>
+  <section>
+    <label>Policy
+      <select id="pol"><option value="fqi">FQI</option><option value="pid">PID</option></select>
+    </label>
+    <label>Field
+      <select id="field">
+        <option value="temp">temperature</option>
+        <option value="rh">humidity</option>
+        <option value="ppfd">PPFD</option>
+        <option value="I">infection</option>
+      </select>
+    </label>
+    <label>Step <span id="tk">0</span>
+      <input id="scrub" type="range" min="0" max="10" value="0"/>
+    </label>
+    <svg id="grid" viewBox="0 0 800 420"></svg>
+    <p class="muted">Columns are towers. Rows are layers, floor at the bottom. Colour is the selected field.</p>
+  </section>
+  <aside>
+    <h2>What-if</h2>
+    <input id="prompt" placeholder="raise layer 3 ppfd 15%"/>
+    <button id="go" type="button">apply to this frame</button>
+    <p class="muted" id="parsed">Grammar: raise|cut layer N field P% · seed tower N</p>
+    <h2>Reward weights</h2>
+    <table id="rw"></table>
+    <h2>Tower MAPE</h2>
+    <table id="mp"></table>
+  </aside>
+</main>
+<section class="lower">
+  <p class="muted">docs: reward, sensor schema, containers — <a href="../docs/index.html" style="color:#3dba6e">open</a></p>
+</section>
+<script src="data.js"></script>
+<script src="farm.js"></script>
+</body>
+</html>

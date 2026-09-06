@@ -1,0 +1,8 @@
+numpy
+scipy
+networkx
+scikit-learn
+lightgbm        # optional, sklearn HistGradientBoosting used if absent
+duckdb          # optional, sqlite3 used if absent
+fastapi
+uvicorn

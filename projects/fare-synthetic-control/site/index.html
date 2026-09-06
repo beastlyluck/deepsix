@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Fare reform — synthetic control brief</title>
+<style>
+  body{margin:0;background:#e7eef6;color:#122033;font:16px/1.5 Georgia,serif}
+  article{max-width:760px;margin:0 auto;padding:48px 24px 80px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{border-bottom:1px solid #c5d0dc;padding:6px 0;text-align:left}
+</style>
+</head>
+<body>
+<article>
+  <p style="color:#1d4e89;letter-spacing:.14em;font-size:12px">POLICY BRIEF · SINGLE TREATED ROUTE</p>
+  <h1>Did the fare move ridership, or just the weather?</h1>
+  <p>ATT <b id="att">—</b> · placebo p <b id="p">—</b> · pre RMSPE <b id="pre">—</b> · post/pre <b id="rat">—</b></p>
+  <p>Weather residualised first. Simplex weights. If a placebo donor looks just as big, there is no brief.</p>
+  <h2>Top donor weights</h2>
+  <table id="w"></table>
+  <p>True simulated effect is −6.4%. docs/METHOD.md · notebook <code>notebooks/placebo.ipynb</code></p>
+  <pre>python main.py</pre>
+</article>
+<script src="data.js"></script>
+<script>
+const C = window.CASE || {};
+document.getElementById("att").textContent = C["ATT (boardings)"] || "run main.py";
+document.getElementById("p").textContent = C["Placebo p"] ?? "—";
+document.getElementById("pre").textContent = C["Pre-fit"] ?? "—";
+document.getElementById("rat").textContent = C.post_pre_rmspe_ratio ?? "—";
+document.getElementById("w").innerHTML = "<tr><th>route</th><th>weight</th></tr>" +
+  Object.entries(C.top_donor_weights || {}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
+</script>
+</body>
+</html>
