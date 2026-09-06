@@ -192,11 +192,3 @@ export function CharacterModel({ character, sway = true, perform = true }: { cha
     </ModelErrorBoundary>
   );
 }
-
-useGLTF.preload('/models/new/itachi.glb', true, true, extendGltf);
-useGLTF.preload('/models/new/goku.glb', true, true, extendGltf);
-useGLTF.preload('/models/new/vegeta.glb', true, true, extendGltf);
-useGLTF.preload('/models/new/zoro.glb', true, true, extendGltf);
-useGLTF.preload('/models/new/optimus.glb', true, true, extendGltf);
-useGLTF.preload('/models/new/spiderman.glb', true, true, extendGltf);
-useGLTF.preload('/models/krishna.glb', true, true, extendGltf);

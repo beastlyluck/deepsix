@@ -1,6 +1,31 @@
-# DEEPSIX — Atharva Khaire's data-science portfolio
+# www.DEEPSIX.com
 
-A manga-manuscript portfolio built with React, TypeScript, Tailwind and React Three Fiber. Six chapters, each narrated by an original figure, present eighteen grounded analytics case studies as comic-book pages with live, in-browser demos. Every case has runnable source in `projects/`.
+Live site: [https://deepsix-pi.vercel.app](https://deepsix-pi.vercel.app)
+
+**Atharva Jitendra Khaire** · Master of Data Science, Monash University · Melbourne.
+
+DEEPSIX is a data-science volume you can walk through. Career, coursework and six digital twins are told as figures, comic pages and live boards. Volume Two is the main work. Volume One is how the career is told. Every case has runnable source in `projects/` and its own public repo.
+
+Coursework for the Master of Data Science is complete. Professional practice (FIT5122) and the industry studio (FIT5120) are in progress.
+
+> The world is no longer a dataset. It is a twin that breathes.
+
+## Volume Two
+
+| Figure | Twin | Repo |
+|---|---|---|
+| Thor | AeroTwin — 400 Hz edge policy, held-out S2R gap | [aerotwin](https://github.com/beastlyluck/aerotwin) |
+| Batman | GridPulse — dispatch LP vs physics-informed rating | [gridpulse](https://github.com/beastlyluck/gridpulse) |
+| Iron Man | BioSync — RK4 wearable replica, DP cohort | [biosync](https://github.com/beastlyluck/biosync) |
+| Luffy | OceanicOS — assignment matrix for a live yard | [oceanicos](https://github.com/beastlyluck/oceanicos) |
+| Kratos | ForgeX — fusion score and a HOLD that will not self-reset | [forgex](https://github.com/beastlyluck/forgex) |
+| Naruto | TerraTwin — closed-loop climate, FQI vs PID | [terratwin](https://github.com/beastlyluck/terratwin) |
+
+Stacks are not shared across twins on purpose.
+
+## Volume One
+
+Six chapters (Illusionist through Weaver) and four Victorian field desks: occupancy twins, night-economy DiD, campus load, SKU hierarchy, uplift, synthetic control, land-use change, inspection KPIs, nightly warehouses, score APIs, supplier graphs, fraud rings.
 
 ## What is in the book
 

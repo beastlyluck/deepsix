@@ -20,8 +20,6 @@ export const scenePlates: Record<FigureId, string> = {
   naruto: '/environments/env-naruto.png',
 };
 
-Object.values(scenePlates).forEach((src) => useTexture.preload(src));
-
 export function ScenicBackdrop({
   src,
   position = [0, 1.65, -14],

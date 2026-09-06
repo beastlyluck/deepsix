@@ -55,5 +55,3 @@ export function Logo3D({
     </group>
   );
 }
-
-useGLTF.preload(LOGO_URL);
