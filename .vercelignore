@@ -1,0 +1,29 @@
+node_modules
+dist
+.shots
+.venv
+venv
+.env
+.env.*
+*.log
+
+# Local source dumps — not used by the site
+/models
+/new models
+/logo
+logo/base.obj
+*.zip
+package.json.bak
+
+# Over the 100MB deploy limit — loaded from the GitHub release
+public/models/new/batman.glb
+public/models/_raw
+public/models/krishna-gltf
+public/models/goku-ui.glb
+public/models/itachi.glb
+public/models/vegeta.glb
+public/models/spiderman.glb
+
+projects/**/outputs
+projects/**/__pycache__
+**/__pycache__
