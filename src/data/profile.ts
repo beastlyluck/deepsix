@@ -1,11 +1,11 @@
 export const profile = {
   name: 'Atharva Jitendra Khaire',
-  title: 'Master of Data Science',
-  subtitle: 'Monash University • Melbourne, Australia',
+  title: 'Data Scientist · Data Analyst · Data Engineer',
+  subtitle: 'Master of Data Science · Monash University · Melbourne · Open to work',
   email: 'atharvakhaire64@gmail.com',
   phone: '+61-0468948068',
   location: 'Melbourne, VIC, Australia',
-  summary: `Software Developer completing a Master of Data Science at Monash University. Coursework is finished; now completing professional practice (FIT5122) and the industry experience studio project (FIT5120). Adept at Python, Jupyter Notebook, and key libraries (NumPy, Pandas, scikit-learn) with hands-on experience in data pipelines, complex dataset exploration, and cross-functional insight sharing. Blender 3D certified, Unreal Engine 5 C++ developer.`,
+  summary: `Looking for a Data Scientist, Data Analyst, or Data Engineer role. Master of Data Science at Monash (coursework complete; FIT5122 and FIT5120 in progress). The work on DEEPSIX is the proof: six digital twins and twenty-two analytics cases covering forecasting, causal inference, SQL contracts, pipelines, and live boards. Python, NumPy, Pandas, scikit-learn, PyTorch where the twin needs it. I turn a messy process into a number you can argue with.`,
   avatar: '/logo/logo.png',
   resumeUrl: '/resume/Atharva-Khaire-Resume.pdf',
   social: {

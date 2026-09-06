@@ -49,10 +49,10 @@ export const Hero: React.FC = () => {
         <h1 id="hero-title" className="mt-6 max-w-3xl font-display text-6xl leading-[0.92] text-gold md:text-8xl">
           DEEPSIX
         </h1>
-        <p className="mt-5 max-w-xl font-display text-2xl text-paper md:text-3xl">A data-science volume you can walk through.</p>
+        <p className="mt-5 max-w-xl font-display text-2xl text-paper md:text-3xl">Looking for a Data Scientist, Data Analyst, or Data Engineer role.</p>
         <p className="mt-4 max-w-lg font-body text-base leading-relaxed text-paper/70">
-          {profile.name} — {profile.title} at Monash. Coursework complete; now on professional practice and industry
-          studio. Volume Two is the work: six twins, six figures. Volume One is how the career is told.
+          {profile.name} — Master of Data Science at Monash. The twins and cases are the capability: analysis,
+          modelling, and the pipelines that keep a number honest. Volume Two is the work. Volume One is how it is told.
         </p>
         <p className="mt-3 max-w-md font-ui text-[11px] uppercase tracking-[0.22em] text-gold/60">{profile.motto}</p>
 

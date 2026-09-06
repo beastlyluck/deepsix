@@ -1,12 +1,14 @@
 # www.DEEPSIX.com
 
+**Open to work:** Data Scientist · Data Analyst · Data Engineer
+
 Live site: [https://deepsix-pi.vercel.app](https://deepsix-pi.vercel.app)
 
 **Atharva Jitendra Khaire** · Master of Data Science, Monash University · Melbourne.
 
-DEEPSIX is a data-science volume you can walk through. Career, coursework and six digital twins are told as figures, comic pages and live boards. Volume Two is the main work. Volume One is how the career is told. Every case has runnable source in `projects/` and its own public repo.
+This profile is a data-science and analytics book, not a software-dev dump. The twins, boards and cases are how I work as a **data scientist** and **data analyst**: frame the question, pick a method, ship a number, write down where it fails. Data engineering shows up as the contracts, lakes, nightly rebuilds and APIs that keep that number alive.
 
-Coursework for the Master of Data Science is complete. Professional practice (FIT5122) and the industry studio (FIT5120) are in progress.
+Coursework for the Master of Data Science is complete. Professional practice (FIT5122) and the industry studio (FIT5120) are in progress. Every case has runnable source in `projects/` and its own public repo.
 
 > The world is no longer a dataset. It is a twin that breathes.
 
