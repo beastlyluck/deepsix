@@ -53,9 +53,11 @@ export function TwinManuscript({ twin, story }: { twin: DigitalTwin; story: Twin
             </p>
             <h1 className="mt-1 font-display text-3xl tracking-wide text-gold md:text-5xl">{figure.title}</h1>
             <p className="mt-2 font-display text-xl text-paper/80">{figure.name} · {twin.name}</p>
-            <p className="mt-4 max-w-2xl font-body text-base leading-relaxed text-paper/75 md:text-lg">{story.hook}</p>
+            <p className="mt-4 max-w-2xl font-body text-base leading-relaxed text-paper/85 md:text-lg">{twin.plain}</p>
+            <p className="mt-2 max-w-2xl font-body text-sm leading-relaxed text-paper/55">{story.hook}</p>
+            <p className="mt-3 max-w-2xl font-ui text-[11px] leading-relaxed text-paper/40">{twin.stack}</p>
             <p className="mt-6 font-ui text-[11px] tracking-[0.25em] text-paper/40">
-              SCROLL · STORY · SPEC · LIVE BOARD · CLICK ANY PANEL TO ENLARGE
+              SCROLL FOR THE STORY, THE METHOD, AND THE LIVE BOARD
             </p>
           </div>
         </div>

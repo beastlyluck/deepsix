@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import type { FigureId } from '../data/figureModels';
 import { characterMetadata, characterOrder } from '../systems/manga/mangaTypes';
-import { chapterStories } from '../data/story';
+import { chapterPlain, chapterStories } from '../data/story';
 import { twinFigureOrder, twinFigureMetadata, isTwinFigure } from '../data/twinFigures';
 import { twinStories } from '../data/twinStories';
+import { digitalTwins } from '../data/digitalTwins';
 import { VaultScene, type VaultPhase } from '../components/three/VaultScene';
 import { DeepSixLogo } from '../components/brand/DeepSixLogo';
 
@@ -37,6 +38,12 @@ export function FigureVault() {
 
   const fig = selected && isTwinFigure(selected) ? twinFigureMetadata[selected] : selected && selected !== 'krishna' ? characterMetadata[selected] : null;
   const story = selected && isTwinFigure(selected) ? twinStories[twinFigureMetadata[selected].twinId] : selected && selected !== 'krishna' ? chapterStories[selected] : null;
+  const plain =
+    selected && isTwinFigure(selected)
+      ? digitalTwins.find((t) => t.figure === selected)?.plain
+      : selected && selected !== 'krishna'
+        ? chapterPlain[selected]
+        : null;
 
   return (
     <div className="relative h-[100svh] w-full overflow-hidden bg-ink">
@@ -54,8 +61,8 @@ export function FigureVault() {
         <h1 className="font-display text-3xl text-gold md:text-5xl">{phase === 'logo' ? 'One mark. Two volumes.' : fig ? fig.title : 'Choose a figure'}</h1>
         <p className="max-w-md font-body text-xs text-paper/55 md:text-sm">
           {phase === 'logo'
-            ? 'Volume Two unfolds first: six twins, six figures. Click a pedestal to load the model.'
-            : 'Drag to orbit · scroll to zoom · a figure loads only when you select it.'}
+            ? 'The 3D models from the portfolio. Volume Two is the six main projects. Volume One is the career chapters. Click a figure to load it.'
+            : 'Drag to orbit. Scroll to zoom. A model loads only when you pick it.'}
         </p>
         <div className="pointer-events-auto mt-3 flex gap-2">
           <button
@@ -92,7 +99,7 @@ export function FigureVault() {
                     <span className="font-display text-2xl text-gold">{fig.name}</span>
                     <span className="font-ui text-[11px] uppercase tracking-wider text-paper/50">{fig.subtitle}</span>
                   </div>
-                  <p className="mt-2 font-body text-sm text-paper/75">{story.hook}</p>
+                  <p className="mt-2 font-body text-sm text-paper/85">{plain ?? story.hook}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <Link
                       to={isTwinFigure(selected) ? `/${selected}` : `/${selected}`}

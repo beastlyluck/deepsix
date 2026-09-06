@@ -6,7 +6,7 @@ import { gsap } from 'gsap';
 import { profile } from '../../data/profile';
 import { digitalTwins } from '../../data/digitalTwins';
 import { Halftone } from '../../systems/manga/Halftone';
-import { manuscriptPrologue } from '../../data/story';
+import { chapterPlain } from '../../data/story';
 import { characterMetadata, characterOrder } from '../../systems/manga/mangaTypes';
 import { twinFigureMetadata } from '../../data/twinFigures';
 import { Logo3D } from '../three/Logo3D';
@@ -43,29 +43,33 @@ export const Hero: React.FC = () => {
               </Suspense>
             </Canvas>
           </div>
-          <p className="font-ui text-[11px] tracking-[0.42em] text-gold/75">{manuscriptPrologue.volumeNumber} · MANUSCRIPT</p>
+          <p className="font-ui text-[11px] tracking-[0.42em] text-gold/75">PORTFOLIO · {profile.name}</p>
         </div>
 
         <h1 id="hero-title" className="mt-6 max-w-3xl font-display text-6xl leading-[0.92] text-gold md:text-8xl">
           DEEPSIX
         </h1>
-        <p className="mt-5 max-w-xl font-display text-2xl text-paper md:text-3xl">Looking for a Data Scientist, Data Analyst, or Data Engineer role.</p>
-        <p className="mt-4 max-w-lg font-body text-base leading-relaxed text-paper/70">
-          {profile.name} — Master of Data Science at Monash. The twins and cases are the capability: analysis,
-          modelling, and the pipelines that keep a number honest. Volume Two is the work. Volume One is how it is told.
+        <p className="mt-5 max-w-2xl font-display text-2xl text-paper md:text-3xl">
+          Atharva Khaire’s data-science portfolio. Built like a book you can walk through.
+        </p>
+        <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-paper/75">
+          Master of Data Science at Monash, looking for a Data Scientist, Data Analyst, or Data Engineer role. The site
+          has two volumes. Volume Two is six main projects — digital twins of drones, a power grid, a body, a port, a
+          factory cell, and a farm. Volume One is the career told as six chapters. Click a chapter, scroll the story,
+          open the live board if you want the numbers.
         </p>
         <p className="mt-3 max-w-md font-ui text-[11px] uppercase tracking-[0.22em] text-gold/60">{profile.motto}</p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <VolumeSwitch />
-          <Link to="/thor" className="btn-manga border-gold bg-gold px-9 py-3.5 text-ink">
-            Open Volume Two
-          </Link>
-          <Link to="/itachi" className="btn-manga border-paper/30 px-8 py-3.5 text-paper/85 hover:border-gold hover:text-gold">
-            Open Volume One
-          </Link>
+          <a href="#twins" className="btn-manga border-gold bg-gold px-9 py-3.5 text-ink">
+            See the main projects
+          </a>
+          <a href="#how" className="btn-manga border-paper/30 px-8 py-3.5 text-paper/85 hover:border-gold hover:text-gold">
+            How this site works
+          </a>
           <Link to="/resume" className="px-3 font-ui text-[11px] uppercase tracking-[0.25em] text-paper/55 hover:text-gold">
-            Character sheet
+            Résumé
           </Link>
         </div>
 
@@ -76,12 +80,13 @@ export const Hero: React.FC = () => {
               <Link
                 key={t.id}
                 to={`/${t.figure}`}
+                title={t.plain}
                 className="rounded-full border border-white/10 bg-ink/45 px-3.5 py-1.5 font-ui text-[10px] uppercase tracking-[0.18em] text-paper/80 backdrop-blur-sm transition hover:border-gold/50 hover:text-gold"
               >
                 <span className="mr-2 font-kanji text-sm normal-case tracking-normal" style={{ color: fig.color }}>
                   {fig.kanji}
                 </span>
-                {fig.name} · {t.name}
+                {t.name}
               </Link>
             );
           })}
@@ -94,6 +99,7 @@ export const Hero: React.FC = () => {
               <Link
                 key={key}
                 to={`/${key}`}
+                title={chapterPlain[key]}
                 className="rounded-full border border-white/10 bg-ink/45 px-3.5 py-1.5 font-ui text-[10px] uppercase tracking-[0.18em] text-paper/70 backdrop-blur-sm transition hover:border-gold/50 hover:text-gold"
               >
                 <span className="mr-2 font-kanji text-sm normal-case tracking-normal" style={{ color: meta.color }}>

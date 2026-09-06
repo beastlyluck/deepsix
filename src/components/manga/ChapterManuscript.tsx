@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Project } from '../../data/openDataSources';
-import { chapterStories } from '../../data/story';
+import { chapterPlain, chapterStories } from '../../data/story';
 import type { CharacterKey } from '../../data/openDataSources';
 import { characterMetadata } from '../../systems/manga/mangaTypes';
 import { SceneBackdrop } from '../three/SceneBackdrop';
@@ -53,8 +53,11 @@ export function ChapterManuscript({ character, projects }: { character: Characte
               {meta.kanji}
             </p>
             <h1 className="mt-1 font-display text-3xl tracking-wide text-gold md:text-5xl">{meta.title}</h1>
-            <p className="mt-4 max-w-2xl font-body text-base leading-relaxed text-paper/75 md:text-lg">{story.hook}</p>
-            <p className="mt-6 font-ui text-[11px] tracking-[0.25em] text-paper/40">SCROLL · {projects.length} CASE PAGES · CLICK ANY PANEL TO ENLARGE</p>
+            <p className="mt-4 max-w-2xl font-body text-base leading-relaxed text-paper/85 md:text-lg">{chapterPlain[character]}</p>
+            <p className="mt-2 max-w-2xl font-body text-sm leading-relaxed text-paper/55">{story.hook}</p>
+            <p className="mt-6 font-ui text-[11px] tracking-[0.25em] text-paper/40">
+              SCROLL FOR THE STORY AND {projects.length} LIVE CASES
+            </p>
           </div>
         </div>
       </section>

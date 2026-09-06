@@ -24,10 +24,11 @@ export function Twins() {
             <VolumeSwitch />
           </div>
           <p className="font-kanji text-5xl text-gold md:text-6xl">{twinsPrologue.kanji}</p>
-          <h1 className="mt-2 font-display text-5xl text-gold md:text-7xl">Volume Two.</h1>
+          <h1 className="mt-2 font-display text-5xl text-gold md:text-7xl">Volume Two · the work</h1>
           <p className="mt-4 max-w-2xl font-display text-2xl text-paper">{twinsPrologue.title}</p>
+          <p className="mt-4 max-w-2xl font-body text-base leading-relaxed text-paper/70">{twinsPrologue.guide}</p>
           <p className="mt-6 font-ui text-[11px] tracking-[0.25em] text-paper/40">
-            SIX CHAPTERS OF STEEL · CLICK A PANEL · TURN A TWIN
+            SIX PROJECTS · PLAIN WORDS FIRST · STACK UNDERNEATH
           </p>
         </div>
       </section>
@@ -39,21 +40,23 @@ export function Twins() {
             <span>p.1</span>
           </header>
           <div className="comic-story-grid">
-            <ComicPanel label="Narration" kind="caption" accent="#FFD700" className="comic-story-premise">
-              <Caption className="whitespace-pre-line text-base leading-relaxed">{twinsPrologue.opening}</Caption>
+            <ComicPanel label="In plain words" kind="caption" accent="#FFD700" className="comic-story-premise">
+              <Caption className="text-base leading-relaxed">{twinsPrologue.guide}</Caption>
+              <Caption className="mt-4 whitespace-pre-line text-sm leading-relaxed text-ink/70">{twinsPrologue.opening}</Caption>
             </ComicPanel>
             <ComicPanel label="The rule" kind="speech" accent="#FFD700">
-              <Speech speaker="The manuscript">If you find yourself adding FastAPI to ForgeX or PyTorch to TerraTwin, stop. The stack is the story.</Speech>
+              <Speech speaker="Atharva">Each twin keeps the tools that industry actually uses. Do not flatten them onto one stack.</Speech>
             </ComicPanel>
-            <ComicPanel label="The desk" kind="plain" accent="#FFD700">
-              <p className="font-display text-2xl text-ink">Each twin is a chapter.</p>
+            <ComicPanel label="How to read a card" kind="plain" accent="#FFD700">
+              <p className="font-display text-2xl text-ink">Plain sentence, then the stack.</p>
               <p className="mt-2 font-body text-sm leading-relaxed text-ink/75">
-                Opening page, case page, live board, notes. Same gutters as the volume. Different ink.
+                Click a project. Scroll the story. Open the live board if you want the numbers. Recruiters can stop at
+                the first sentence.
               </p>
             </ComicPanel>
-            <ComicPanel label="The ask" kind="caption" accent="#FFD700">
+            <ComicPanel label="Honesty" kind="caption" accent="#FFD700">
               <Caption className="text-sm leading-relaxed">
-                Read the honesty panel before you trust the board. Synthetic worlds stay labelled. Losses stay printed.
+                Read the honesty note before you trust the board. Fake worlds stay labelled. Losses stay printed.
               </Caption>
             </ComicPanel>
           </div>
@@ -82,9 +85,10 @@ export function Twins() {
                     <h2 className="mt-2 font-display text-2xl">{twinFigureMetadata[t.figure].name}</h2>
                     <p className="font-display text-xl text-ink/80">{t.name}</p>
                     <p className="mt-1 font-ui text-[10px] uppercase tracking-[0.18em] text-ink/50">{t.industry}</p>
-                    <Caption className="mt-3 text-sm leading-relaxed">{s.hook}</Caption>
+                    <p className="mt-3 font-body text-sm leading-relaxed text-ink/80">{t.plain}</p>
+                    <p className="mt-2 font-ui text-[10px] leading-relaxed text-ink/45">{t.stack}</p>
                     <span className="mt-auto pt-4 font-ui text-[11px] uppercase tracking-wider" style={{ color: t.accent }}>
-                      Turn the page →
+                      Open this project →
                     </span>
                   </Link>
                 </ComicPanel>

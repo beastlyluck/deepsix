@@ -25,6 +25,8 @@ export const manuscriptPrologue = {
   volumeTitle: 'DEEPSIX',
   volumeNumber: 'VOL. 01',
   tagline: 'Six chapters. One manuscript. Analytics you can walk through.',
+  guide:
+    'Volume One is the career, told as six chapters. Same idea as a portfolio case study: click a figure, read the story, open the live demo. The language is a bit more comic-book. The work is still analysis.',
   opening: `Melbourne. A desk lamp. A blank page.
 
 Atharva does not write a résumé. He writes a volume: six chapters, each a way of seeing a system until it becomes a twin you can question.
@@ -34,6 +36,15 @@ The last page is a web that must not snap.
 
 If you are hiring, you are not flipping fan art.
 You are reading how he thinks.`,
+};
+
+export const chapterPlain: Record<CharacterKey, string> = {
+  itachi: 'Hospital beds, city nights, and research papers — useful numbers when the real records cannot be opened.',
+  goku: 'Predicting campus power and shop sales, and raising a flag when the model starts lying.',
+  vegeta: 'Testing whether a discount or a fare change actually changed anyone’s behaviour.',
+  zoro: 'Satellite maps and factory cameras — what changed on the ground, and which defects matter.',
+  optimus: 'Nightly data rebuilds, a credit-style score, and a KPI board with named owners.',
+  spiderman: 'Who is connected to whom — delayed shipments, isolated labs, fraud rings.',
 };
 
 export const chapterStories: Record<CharacterKey, ChapterStory> = {

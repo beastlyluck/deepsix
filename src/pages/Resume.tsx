@@ -170,7 +170,7 @@ export function Resume() {
                         </span>
                       </div>
                       <p className="font-display text-lg text-ink">{t.name}</p>
-                      <p className="mt-1 font-body text-xs text-ink/70">{s.hook}</p>
+                      <p className="mt-1 font-body text-xs text-ink/70">{t.plain}</p>
                     </Link>
                   );
                 })}
@@ -191,7 +191,7 @@ export function Resume() {
                   >
                     <p className="font-ui text-[10px] uppercase tracking-wider text-ink/50">{d.domain}</p>
                     <p className="font-display text-lg text-ink">{d.title}</p>
-                    <p className="mt-1 font-body text-xs text-ink/70">{d.blurb}</p>
+                    <p className="mt-1 font-body text-xs text-ink/70">{d.plain}</p>
                   </button>
                 ))}
               </div>

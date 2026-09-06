@@ -6,6 +6,7 @@ import { ThemeProvider } from './components/ui/ThemeProvider';
 import { Navigation } from './components/ui/Navigation';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { PageTransition } from './components/layout/PageTransition';
+import { ScrollToTop } from './components/layout/ScrollToTop';
 import { MangaManuscriptProvider } from './systems/manga/MangaManuscript';
 import { SoundscapeProvider } from './audio/Soundscape';
 
@@ -39,6 +40,7 @@ function MainLayout() {
     <>
       <Navigation />
       <ScrollProgress />
+      <ScrollToTop />
       <PageTransition />
       <main className="relative z-10 min-h-screen">
         <Suspense fallback={<LoadingFallback />}>

@@ -3,6 +3,7 @@ export interface FieldDesk {
   title: string;
   domain: string;
   blurb: string;
+  plain: string;
   run: string;
   github: string;
 }
@@ -13,6 +14,7 @@ export const fieldDesks: FieldDesk[] = [
     title: 'ED flow board',
     domain: 'Healthcare ops',
     blurb: 'Ramping and wait across four Victorian campuses. Austin takes the flu week.',
+    plain: 'Which Melbourne emergency departments are overflowing this week.',
     run: 'python main.py && streamlit run app.py',
     github: 'https://github.com/beastlyluck/vic-ed-flow',
   },
@@ -21,6 +23,7 @@ export const fieldDesks: FieldDesk[] = [
     title: 'Rent pressure atlas',
     domain: 'Housing',
     blurb: 'SA2 stress against a 30% income rule. Open site/index.html after the run.',
+    plain: 'Which suburbs are spending too much of their income on rent.',
     run: 'python main.py',
     github: 'https://github.com/beastlyluck/rent-pressure-atlas',
   },
@@ -29,6 +32,7 @@ export const fieldDesks: FieldDesk[] = [
     title: 'VIC grid peak',
     domain: 'Energy',
     blurb: 'Demand q90 and three named price events on a VIC1-shaped clock.',
+    plain: 'When Victoria’s power demand spikes and prices jump.',
     run: 'python main.py && uvicorn app:app --reload',
     github: 'https://github.com/beastlyluck/vic-grid-peak',
   },
@@ -37,6 +41,7 @@ export const fieldDesks: FieldDesk[] = [
     title: 'Invoice leak desk',
     domain: 'Finance ops',
     blurb: 'Duplicate and split AP payments. Hold or release writes the audit file.',
+    plain: 'Finds duplicate payments before the money leaves.',
     run: 'python main.py && flask --app app run',
     github: 'https://github.com/beastlyluck/invoice-leak-desk',
   },

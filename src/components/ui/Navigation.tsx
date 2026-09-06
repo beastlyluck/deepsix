@@ -87,7 +87,7 @@ export const Navigation: React.FC = () => {
           {[
             { to: '/figures', label: 'Figures' },
             { to: '/resume', label: 'Résumé' },
-            { to: '/contact', label: 'Afterword' },
+            { to: '/contact', label: 'Contact' },
           ].map((l) => (
             <button
               key={l.to}
@@ -161,7 +161,7 @@ export const Navigation: React.FC = () => {
           {[
             { to: '/figures', label: 'Figure Vault' },
             { to: '/resume', label: 'Résumé' },
-            { to: '/contact', label: 'Afterword' },
+            { to: '/contact', label: 'Contact' },
           ].map((l) => (
             <button key={l.to} onClick={() => navigate(l.to)} className="w-72 rounded-xl border border-white/10 px-5 py-3 text-paper/70">
               {l.label}

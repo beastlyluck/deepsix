@@ -9,6 +9,7 @@ export interface DigitalTwin {
   stack: string;
   product: string;
   blurb: string;
+  plain: string;
   accent: string;
   ink: string;
   run: string;
@@ -25,6 +26,7 @@ export const digitalTwins: DigitalTwin[] = [
     stack: 'PyTorch sim, TorchScript, C++/libtorch, gRPC, raw WebGL',
     product: '400 Hz edge policy with a measured sim-to-real gap',
     blurb: 'Six airframes, one policy, held-out gusts. Domain randomisation is scored, not assumed.',
+    plain: 'Trains drone software in fake wind, then checks how badly it fails in a wind it never saw.',
     accent: '#3d9dff',
     ink: '#0a1018',
     run: 'python main.py',
@@ -39,6 +41,7 @@ export const digitalTwins: DigitalTwin[] = [
     stack: 'SciPy DC flow, PINN, HiGHS, Avro/Flink SQL, SVG',
     product: 'Dispatch LP against a physics-informed line rating',
     blurb: 'One weak corridor, an evening peak, a cascade score on every bus.',
+    plain: 'Plans a power grid so one hot line does not take the neighbourhood down.',
     accent: '#3dff8a',
     ink: '#07090a',
     run: 'python main.py',
@@ -53,6 +56,7 @@ export const digitalTwins: DigitalTwin[] = [
     stack: 'NumPy reverse-mode ODE, Parquet, ONNX, Streamlit',
     product: 'On-device RK4 replica with a DP cohort release',
     blurb: 'Glucose and heart-rate as a continuous twin. Gaps are the product, not a footnote.',
+    plain: 'A computer copy of heart rate and blood sugar that keeps going when the watch drops out.',
     accent: '#1aa6b8',
     ink: '#f4f8f9',
     run: 'python main.py && streamlit run app.py',
@@ -67,6 +71,7 @@ export const digitalTwins: DigitalTwin[] = [
     stack: 'heap DES, NetworkX, Hungarian, GBM ST-GNN, FastAPI WS',
     product: 'Assignment matrix that keeps the yard from filling',
     blurb: 'Two berths, six cranes, 16 AGVs. Same schedule, two policies, a yard that does not jam.',
+    plain: 'Schedules ships, cranes and yard trucks so the port does not jam.',
     accent: '#ff7a1a',
     ink: '#0b1624',
     run: 'python main.py',
@@ -81,6 +86,7 @@ export const digitalTwins: DigitalTwin[] = [
     stack: 'OpenCV, scipy STFT, IsolationForest, Three.js',
     product: 'JSON logit plus a HOLD interlock that will not self-reset',
     blurb: 'Acoustics catch the bearing. Vision catches the leak. The model does not restart the cell.',
+    plain: 'Listens and looks at a factory robot. If something is wrong it stops the cell and will not start it again by itself.',
     accent: '#ff6a1a',
     ink: '#0b0a09',
     run: 'python main.py',
@@ -95,6 +101,7 @@ export const digitalTwins: DigitalTwin[] = [
     stack: 'TOML, numpy FQI, spatial SIR, k8s/systemd, SVG',
     product: 'Closed-loop climate. Facility.toml is the truth file.',
     blurb: 'Eight towers, a disease that walks. FQI is raced against a setpoint PID on the same seed.',
+    plain: 'Runs a vertical farm’s climate and disease, and races a learned plan against a simple thermostat.',
     accent: '#3dba6e',
     ink: '#0e1612',
     run: 'python main.py',

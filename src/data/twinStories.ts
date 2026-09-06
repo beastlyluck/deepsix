@@ -38,6 +38,8 @@ export const twinsPrologue = {
   volume: 'VOL. 02 · THE WORK',
   kanji: '双子',
   title: 'Six twins. Six figures. Six stacks.',
+  guide:
+    'These six projects are the main work. Each one is a digital twin: a computer copy of a real system (drones, a power grid, a body, a port, a factory cell, a farm). Click a card to open the story. Scroll for the problem, the method, and the live board. The small line under each card is the technical stack.',
   opening: `Volume Two is the work.
 
 Thor holds the swarm. Batman watches the grid. The suit keeps the body honest. Luffy runs the yard. Kratos will not reset the cell. Naruto walks the farm.
