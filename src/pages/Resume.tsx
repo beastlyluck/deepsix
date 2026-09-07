@@ -160,8 +160,8 @@ export function Resume() {
                   </Caption>
                 </div>
                 <div>
-                  <p className="font-display text-2xl text-ink">Bachelor of Computer Science</p>
-                  <p className="font-ui text-xs text-ink/70">Savitribai Phule Pune University · graduated January 2024</p>
+                  <p className="font-display text-2xl text-ink">Bachelor of Engineering (Computer Science)</p>
+                  <p className="font-ui text-xs text-ink/70">Savitribai Phule Pune University · B.E. · graduated January 2024</p>
                   <Caption className="mt-2 text-sm">Capstone: recreating historical figures in a virtual environment using Unreal Engine and AI.</Caption>
                 </div>
               </div>

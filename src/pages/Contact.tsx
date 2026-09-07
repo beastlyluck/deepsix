@@ -143,10 +143,10 @@ export function Contact() {
                   <p className="font-ui text-xs text-paper/50">Coursework complete · professional practice & industry studio</p>
                 </div>
                 <div className="border-t border-ink-lighter pt-4">
-                  <h3 className="font-display text-lg text-paper">Bachelor of Computer Science</h3>
+                  <h3 className="font-display text-lg text-paper">Bachelor of Engineering (Computer Science)</h3>
                   <p className="font-ui text-sm text-gold">Savitribai Phule Pune University</p>
                   <p className="font-ui text-xs text-paper/50">
-                    Graduated 2024 • Recreating historical figures in a virtual environment using Unreal and AI
+                    B.E. · Graduated January 2024 · Capstone: historical figures in a virtual environment using Unreal and AI
                   </p>
                 </div>
               </div>
