@@ -14,6 +14,7 @@ import { SiteFooter } from '../layout/SiteFooter';
 import { SceneBackdrop } from '../three/SceneBackdrop';
 import { FigureScene } from '../three/FigureScene';
 import { VolumeSwitch } from '../ui/VolumeSwitch';
+import { useTwinModelPreload } from '../three/preloadFigures';
 import { VOL1_END, VOL1_START } from '../../data/volumes';
 
 export function TwinManuscript({ twin, story }: { twin: DigitalTwin; story: TwinStory }) {
@@ -22,13 +23,14 @@ export function TwinManuscript({ twin, story }: { twin: DigitalTwin; story: Twin
   const spec = figureModels[twin.figure];
   const [openBeat, setOpenBeat] = useState<string | null>(null);
   const beat = story.beats.find((b) => b.id === openBeat);
+  useTwinModelPreload(twin.figure, next.figure);
 
   return (
     <div className="relative min-h-screen bg-ink">
       <Halftone opacity={0.025} size={26} color={twin.accent} />
 
       <section className="relative h-[92svh] overflow-hidden border-b border-white/10">
-        <SceneBackdrop camera={spec.camera} lookAt={spec.lookAt}>
+        <SceneBackdrop camera={spec.camera} lookAt={spec.lookAt} dpr={[1, 1.25]}>
           <FigureScene id={twin.figure} />
         </SceneBackdrop>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-ink/70 to-transparent" />

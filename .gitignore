@@ -25,8 +25,8 @@ venv/
 public/boards/*
 !public/boards/.gitignore
 
-# Over Vercel/GitHub 100MB file limit — hosted as a GitHub release
-public/models/new/batman.glb
+# Local optimize scratch
+public/models/_opt/
 
 # Unused raw / duplicate model trees
 public/models/_raw/

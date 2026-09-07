@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Hero } from '../components/ui/Hero';
 import { SiteFooter } from '../components/layout/SiteFooter';
@@ -13,6 +14,46 @@ import { twinFigureMetadata } from '../data/twinFigures';
 import { FigureScene } from '../components/three/FigureScene';
 import { ComicPanel, Caption } from '../components/comic/ComicPanel';
 import { VolumeSwitch } from '../components/ui/VolumeSwitch';
+
+function LazyTwinClose() {
+  const ref = useRef<HTMLElement>(null);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setShow(true);
+      },
+      { rootMargin: '240px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} className="relative h-[72vh] overflow-hidden border-t border-white/10">
+      {show ? (
+        <SceneBackdrop camera={{ position: [1.6, 1.3, 5.8], fov: 38 }} lookAt={[0.6, 1.0, 0]} dpr={[1, 1.25]}>
+          <FigureScene id="thor" />
+        </SceneBackdrop>
+      ) : null}
+      <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/55 to-transparent" />
+      <div className="relative z-10 flex h-full max-w-5xl flex-col justify-center px-6">
+        <p className="font-ui text-[11px] tracking-[0.3em] text-gold/70">START WITH THE FIRST PROJECT</p>
+        <h2 className="max-w-xl font-display text-4xl text-gold md:text-5xl">AeroTwin — drone software in wind it never trained on.</h2>
+        <p className="mt-3 max-w-md font-body text-sm text-paper/60">
+          The first Volume Two chapter. Read the plain-English problem, then the live board if you want the gap
+          number.
+        </p>
+        <Link to="/thor" className="btn-manga mt-6 w-fit border-gold bg-gold px-8 py-3 text-ink">
+          Open AeroTwin
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 export function Home() {
   return (
@@ -225,23 +266,7 @@ export function Home() {
         </div>
       </section>
 
-      <section className="relative h-[72vh] overflow-hidden border-t border-white/10">
-        <SceneBackdrop camera={{ position: [1.6, 1.3, 5.8], fov: 38 }} lookAt={[0.6, 1.0, 0]}>
-          <FigureScene id="thor" />
-        </SceneBackdrop>
-        <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/55 to-transparent" />
-        <div className="relative z-10 flex h-full max-w-5xl flex-col justify-center px-6">
-          <p className="font-ui text-[11px] tracking-[0.3em] text-gold/70">START WITH THE FIRST PROJECT</p>
-          <h2 className="max-w-xl font-display text-4xl text-gold md:text-5xl">AeroTwin — drone software in wind it never trained on.</h2>
-          <p className="mt-3 max-w-md font-body text-sm text-paper/60">
-            The first Volume Two chapter. Read the plain-English problem, then the live board if you want the gap
-            number.
-          </p>
-          <Link to="/thor" className="btn-manga mt-6 w-fit border-gold bg-gold px-8 py-3 text-ink">
-            Open AeroTwin
-          </Link>
-        </div>
-      </section>
+      <LazyTwinClose />
 
       <SiteFooter />
     </div>

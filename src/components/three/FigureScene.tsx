@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { ContactShadows, Environment, Sparkles } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -44,6 +44,14 @@ export function FigureScene({ id }: { id: FigureId }) {
   const fog = FOG[id] ?? '#08080a';
   const glow = figureColor(id);
   const hot = id === 'optimus' || id === 'ironman' || id === 'kratos';
+  const twin = isTwinFigure(id);
+  const [envOn, setEnvOn] = useState(!twin);
+
+  useEffect(() => {
+    if (!twin) return;
+    const t = window.setTimeout(() => setEnvOn(true), 900);
+    return () => window.clearTimeout(t);
+  }, [twin]);
 
   return (
     <>
@@ -56,16 +64,16 @@ export function FigureScene({ id }: { id: FigureId }) {
         penumbra={0.7}
         intensity={1.55}
         color="#fff4e0"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        castShadow={!twin}
+        shadow-mapSize-width={twin ? 512 : 1024}
+        shadow-mapSize-height={twin ? 512 : 1024}
       />
       <spotLight position={[-3, 2.8, -2]} angle={0.5} penumbra={0.8} intensity={0.55} color={glow} />
       <pointLight position={[0, 2.4, 1.6]} intensity={0.45} color={glow} distance={7} />
       <pointLight position={[0.4, 1.4, 2.2]} intensity={hot ? 1.15 : 0.7} color="#fff6ea" distance={6} />
       <Suspense fallback={null}>
         <ScenicBackdrop src={scenePlates[id]} />
-        <Environment preset="night" background={false} />
+        {envOn ? <Environment preset="night" background={false} /> : null}
       </Suspense>
       <group position={[0, -0.18, 0]}>
         <CharacterModel character={id} />
@@ -73,18 +81,25 @@ export function FigureScene({ id }: { id: FigureId }) {
           <FigureAura id={id} />
         </Suspense>
       </group>
-      <ParticleField />
-      <Sparkles count={48} scale={[8, 5.5, 8]} size={2.2} speed={0.35} color={figureParticle(id)} />
+      {twin ? null : <ParticleField />}
+      <Sparkles count={twin ? 18 : 48} scale={[8, 5.5, 8]} size={twin ? 1.6 : 2.2} speed={0.35} color={figureParticle(id)} />
       <ContactShadows position={[0, -0.02, 0]} opacity={0.55} scale={9} blur={2.4} far={3.2} color="#000000" />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.021, 0]} receiveShadow>
         <circleGeometry args={[4.2, 48]} />
         <meshStandardMaterial color="#111111" roughness={0.92} metalness={0.08} transparent opacity={0.72} />
       </mesh>
-      <EffectComposer>
-        <Bloom intensity={hot ? 0.12 : 0.32} luminanceThreshold={hot ? 0.82 : 0.5} luminanceSmoothing={0.32} mipmapBlur />
-        <ChromaticAberration offset={chroma} radialModulation modulationOffset={0.35} />
-        <Vignette eskil={false} offset={0.14} darkness={0.62} />
-      </EffectComposer>
+      {twin ? (
+        <EffectComposer>
+          <Bloom intensity={hot ? 0.12 : 0.18} luminanceThreshold={hot ? 0.82 : 0.5} luminanceSmoothing={0.32} mipmapBlur />
+          <Vignette eskil={false} offset={0.14} darkness={0.62} />
+        </EffectComposer>
+      ) : (
+        <EffectComposer>
+          <Bloom intensity={hot ? 0.12 : 0.32} luminanceThreshold={hot ? 0.82 : 0.5} luminanceSmoothing={0.32} mipmapBlur />
+          <ChromaticAberration offset={chroma} radialModulation modulationOffset={0.35} />
+          <Vignette eskil={false} offset={0.14} darkness={0.62} />
+        </EffectComposer>
+      )}
     </>
   );
 }

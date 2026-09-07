@@ -14,13 +14,14 @@ export function SceneBackdrop({
   camera = { position: [0, 1.35, 5.6], fov: 40 },
   lookAt = [0, 1.0, 0],
   interactive = false,
-}: SceneBackdropProps) {
+  dpr = [1, 1.4] as [number, number],
+}: SceneBackdropProps & { dpr?: [number, number] }) {
   return (
     <div className={`${interactive ? 'pointer-events-auto' : 'pointer-events-none'} absolute inset-0 z-0`} aria-hidden={!interactive}>
       <Canvas
         shadows
         camera={camera}
-        dpr={[1, 1.6]}
+        dpr={dpr}
         gl={{ antialias: true, powerPreference: 'high-performance', alpha: true }}
         style={{ width: '100%', height: '100%' }}
         onCreated={({ camera: cam }) => cam.lookAt(...lookAt)}

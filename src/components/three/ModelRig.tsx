@@ -11,6 +11,23 @@ import { lockRootMotion } from './retargetClip';
 import { paintSpecGlossMaps, registerSpecGloss } from './gltfSpecGloss';
 import { characterMetadata } from '../../systems/manga/mangaTypes';
 import type { CharacterKey } from '../../data/openDataSources';
+import { isTwinFigure, twinFigureMetadata } from '../../data/twinFigures';
+
+function TwinStandIn({ id }: { id: FigureId }) {
+  const color = isTwinFigure(id) ? twinFigureMetadata[id].color : '#FFD700';
+  return (
+    <group position={[0, 0.15, 0]}>
+      <mesh position={[0, 0.95, 0]} castShadow>
+        <capsuleGeometry args={[0.28, 0.95, 6, 12]} />
+        <meshStandardMaterial color={color} metalness={0.45} roughness={0.38} emissive={color} emissiveIntensity={0.18} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]} castShadow>
+        <sphereGeometry args={[0.22, 16, 16]} />
+        <meshStandardMaterial color={color} metalness={0.35} roughness={0.42} />
+      </mesh>
+    </group>
+  );
+}
 
 function extendGltf(loader: GLTFLoader) {
   registerSpecGloss(loader);
@@ -180,7 +197,7 @@ class ModelErrorBoundary extends Component<{ fallback: ReactNode; children: Reac
 
 export function CharacterModel({ character, sway = true, perform = true }: { character: FigureId; sway?: boolean; perform?: boolean }) {
   const spec = figureModels[character];
-  const fallback = character in characterMetadata ? <ChapterFigure character={character as CharacterKey} sway={sway} /> : null;
+  const fallback = character in characterMetadata ? <ChapterFigure character={character as CharacterKey} sway={sway} /> : <TwinStandIn id={character} />;
 
   if (!spec.url) return fallback;
 

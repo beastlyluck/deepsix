@@ -73,7 +73,7 @@ export const figureModels: Record<FigureId, FigureModelSpec> = {
     lookAt: [0, 0.82, 0],
   },
   batman: {
-    url: 'https://github.com/beastlyluck/deepsix/releases/download/models/batman.glb',
+    url: '/models/new/batman.glb',
     height: 1.64,
     clips: ['Batman_Nav_Idle_v5', 'C004_S01_Emote_CharacterSelect_Loop'],
     camera: { position: [0.18, 0.92, 5.8], fov: 34 },
