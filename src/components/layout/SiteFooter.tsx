@@ -16,6 +16,9 @@ export function SiteFooter() {
           <Link to="/itachi" className="hover:text-gold">Vol. 01</Link>
           <Link to="/twins" className="hover:text-gold">Vol. 02</Link>
           <Link to="/resume" className="hover:text-gold">Résumé</Link>
+          <a href={profile.resumeUrl} download="Atharva-Khaire-Resume.pdf" className="hover:text-gold">
+            Download PDF
+          </a>
           <Link to="/contact" className="hover:text-gold">Contact</Link>
         </div>
         <div className="flex justify-center gap-6 text-paper/50">

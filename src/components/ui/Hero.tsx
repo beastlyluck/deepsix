@@ -71,6 +71,13 @@ export const Hero: React.FC = () => {
           <Link to="/resume" className="px-3 font-ui text-[11px] uppercase tracking-[0.25em] text-paper/55 hover:text-gold">
             Résumé
           </Link>
+          <a
+            href={profile.resumeUrl}
+            download="Atharva-Khaire-Resume.pdf"
+            className="px-3 font-ui text-[11px] uppercase tracking-[0.25em] text-paper/55 hover:text-gold"
+          >
+            Download PDF
+          </a>
         </div>
 
         <nav aria-label="Volume Two" className="mt-10 flex flex-wrap gap-2">
