@@ -118,14 +118,25 @@ export function Resume() {
             </p>
             <p className="mt-4 max-w-2xl font-body text-sm leading-relaxed text-paper/65">{profile.summary}</p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <a href={profile.resumeUrl} download className="btn-manga border-gold bg-gold px-7 py-3 text-ink">
+              <a href={profile.resumeUrl} download="Atharva-Khaire-Resume.pdf" className="btn-manga border-gold bg-gold px-7 py-3 text-ink">
                 Download PDF
               </a>
               <button onClick={() => setOpen('pdf')} className="font-ui text-[11px] uppercase tracking-[0.2em] text-paper/60 hover:text-gold">
                 View in browser
               </button>
-              <a href={`mailto:${profile.email}`} className="font-ui text-[11px] uppercase tracking-[0.2em] text-paper/60 hover:text-gold">
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 font-ui text-[11px] uppercase tracking-[0.18em] text-paper/55">
+              <a href={`mailto:${profile.email}`} className="hover:text-gold">
                 {profile.email}
+              </a>
+              <a href={profile.website} target="_blank" rel="noreferrer" className="hover:text-gold">
+                Portfolio
+              </a>
+              <a href={profile.social.linkedin} target="_blank" rel="noreferrer" className="hover:text-gold">
+                LinkedIn
+              </a>
+              <a href={profile.social.github} target="_blank" rel="noreferrer" className="hover:text-gold">
+                GitHub
               </a>
             </div>
           </div>
